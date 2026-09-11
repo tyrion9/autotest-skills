@@ -68,6 +68,12 @@ skill):
   xem báo cáo HTML chi tiết (request/response, ảnh chụp màn hình, tham số
   theo scenario)
 
+## Cách dùng — prompt từng bước
+
+Xem **[`PROMPTS.md`](./PROMPTS.md)**: prompt mẫu (kèm bản đã điền theo ví dụ
+cafe-checkout) cho từng bước 1→4, cách kiểm tra kết quả sau mỗi bước, prompt
+gộp dùng `autotest-pipeline`, và cách chạy lại 1 phần khi tính năng đổi nhỏ.
+
 ## Ví dụ đã validate
 
 `examples/cafe-checkout/` — artifact thật sinh ra khi áp dụng bộ skill này
