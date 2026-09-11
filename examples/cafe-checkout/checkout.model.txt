@@ -1,0 +1,17 @@
+# PICT model cho luồng "chọn đồ uống + tuỳ chọn -> thanh toán" của app cà phê.
+# Sinh bằng pict-cli (thay thế PictMCP đã archived - xem README mục "Về PictMCP").
+#
+# Chạy: npx pict-cli@0.2 testing/pict/checkout.model.txt -o 2 -r 42
+#   -o 2  : pairwise (2-way)
+#   -r 42 : seed cố định để kết quả tái lập được giữa các lần chạy
+
+Drink: CaPheDen, CaPheSua, BacXiu, TraDao, MatchaLatte
+Size: S, M, L
+Sugar: 0, 30, 50, 70, 100
+Ice: 0, 30, 50, 100
+Topping: None, TranChau, Thach
+Quantity: 1, 2, 5, 20
+PaymentMethod: Cash, Card, EWallet
+
+# Bạc xỉu trong menu demo này chỉ phục vụ nóng => đá luôn phải là 0%
+IF [Drink] = "BacXiu" THEN [Ice] = 0;

@@ -1,0 +1,2 @@
+Then hệ thống hiển thị tổng tiền cần thanh toán đúng với công thức tính giá
+And đơn hàng được lưu vào cơ sở dữ liệu với đúng tổng tiền
