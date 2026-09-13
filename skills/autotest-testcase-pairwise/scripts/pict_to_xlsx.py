@@ -58,6 +58,12 @@ PICT_SPEC = "pict-cli@0.2"
 DATA_SHEET = "testcase-pairwise"
 META_SHEET = "meta"
 
+# Tên cột cố định của sheet dữ liệu. Factor TRÙNG một trong các tên này sẽ tạo
+# header có 2 cột cùng tên -> bước sau (xlsx_to_feature.py) đọc theo tên cột,
+# cột sau ghi đè cột trước và giá trị factor biến mất KHÔNG BÁO LỖI.
+# => chặn ngay từ đây thay vì để dữ liệu hỏng âm thầm.
+RESERVED_COLUMNS = ("STT", "MatrixID", "Loai", "Gherkin", "KetQuaMongDoi", "GhiChu")
+
 # Tên cột trong bảng "Case biên" của factor.md — chấp nhận nhiều biến thể để
 # không phụ thuộc cứng 1 cách viết. Nếu KHÔNG khớp cái nào -> báo lỗi rõ ràng
 # (KHÔNG im lặng trả rỗng, vì như vậy case biên sẽ mất dữ liệu mà không ai biết).
@@ -253,6 +259,23 @@ def build_rows(args) -> tuple[list[str], list[list], list[list]]:
     dùng chung cho cả chế độ ghi file lẫn --check."""
     pict_rows = run_pict(args.model, args.order, args.seed)
     factor_names = list(pict_rows[0].keys())
+
+    clashes = [name for name in factor_names if name in RESERVED_COLUMNS]
+    if clashes:
+        raise PictToXlsxError(
+            "Tên factor trùng tên cột dành riêng của file xlsx: "
+            + ", ".join(clashes)
+            + f"\n(các tên dành riêng: {', '.join(RESERVED_COLUMNS)})"
+            + "\nĐổi tên factor trong model PICT + factor.md, vd 'GhiChu' -> 'CoGhiChu'."
+            + "\nLý do: 2 cột cùng tên -> bước sinh .feature đọc nhầm cột và giá trị"
+            " factor mất trắng mà không có cảnh báo nào."
+        )
+
+    duplicates = sorted({name for name in factor_names if factor_names.count(name) > 1})
+    if duplicates:
+        raise PictToXlsxError(
+            "Model PICT có factor trùng tên: " + ", ".join(duplicates)
+        )
 
     template_lines: list[str] = []
     if args.gherkin_template:

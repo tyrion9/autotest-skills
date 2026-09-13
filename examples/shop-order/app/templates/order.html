@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Đặt hàng thành công — Shop Demo{% endblock %}
+
+{% block content %}
+<section data-testid="order-success">
+  <h1 data-testid="order-success-title">Đặt hàng thành công</h1>
+  <p>Mã đơn hàng: <strong data-testid="order-code">{{ order['code'] }}</strong></p>
+
+  <h2>Chi tiết hàng</h2>
+  <table class="summary items-table" data-testid="order-items">
+    <thead>
+      <tr><th>Sản phẩm</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th></tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr data-testid="order-line-{{ item['product_id'] }}">
+        <td class="cell-with-thumb" data-testid="order-item-name-{{ item['product_id'] }}">
+          <img class="thumb thumb--sm" src="{{ url_for('static', filename='images/' ~ (item['image'] or 'placeholder.svg')) }}"
+               alt="{{ item['product_name'] }}" loading="lazy"
+               data-testid="order-item-image-{{ item['product_id'] }}">
+          <span>{{ item['product_name'] }}</span>
+        </td>
+        <td data-testid="order-unit-price-{{ item['product_id'] }}" data-value="{{ item['unit_price'] }}">
+          {{ item['unit_price'] | vnd }}
+        </td>
+        <td data-testid="order-qty-{{ item['product_id'] }}" data-value="{{ item['quantity'] }}">
+          {{ item['quantity'] }}
+        </td>
+        <td data-testid="order-line-total-{{ item['product_id'] }}" data-value="{{ item['line_total'] }}">
+          {{ item['line_total'] | vnd }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Thanh toán</h2>
+  <table class="summary">
+    <tbody>
+      <tr><th>Tổng số lượng</th>
+          <td data-testid="order-item-count" data-value="{{ order['item_count'] }}">{{ order['item_count'] }}</td></tr>
+      <tr><th>Tạm tính</th>
+          <td data-testid="order-subtotal" data-value="{{ order['subtotal'] }}">{{ order['subtotal'] | vnd }}</td></tr>
+      <tr><th>Phí vận chuyển</th>
+          <td data-testid="order-shipping-fee" data-value="{{ order['shipping_fee'] }}">{{ order['shipping_fee'] | vnd }}</td></tr>
+      <tr><th>Phí thu hộ (COD)</th>
+          <td data-testid="order-cod-fee" data-value="{{ order['cod_fee'] }}">{{ order['cod_fee'] | vnd }}</td></tr>
+      <tr class="total-row"><th>Tổng cộng</th>
+          <td data-testid="order-total" data-value="{{ order['total'] }}">{{ order['total'] | vnd }}</td></tr>
+      <tr><th>Phương thức</th>
+          <td data-testid="order-payment-method" data-value="{{ order['payment_method'] }}">{{ payment_label }}</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Thông tin liên hệ đã lưu</h2>
+  <table class="summary">
+    <tbody>
+      <tr><th>Họ tên</th><td data-testid="order-customer-name">{{ order['customer_name'] }}</td></tr>
+      <tr><th>Điện thoại</th><td data-testid="order-phone">{{ order['phone'] }}</td></tr>
+      <tr><th>Email</th><td data-testid="order-email">{{ order['email'] }}</td></tr>
+      <tr><th>Địa chỉ</th><td data-testid="order-address">{{ order['address'] }}</td></tr>
+      <tr><th>Khu vực</th>
+          <td data-testid="order-region" data-value="{{ order['region'] }}">{{ region_label }}</td></tr>
+      <tr><th>Ghi chú</th><td data-testid="order-note">{{ order['note'] }}</td></tr>
+    </tbody>
+  </table>
+
+  <p><a class="btn" href="{{ url_for('index') }}" data-testid="btn-continue-shopping">Tiếp tục mua hàng</a></p>
+</section>
+{% endblock %}

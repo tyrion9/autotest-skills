@@ -1,6 +1,6 @@
 ---
 name: autotest-run-test
-description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân loại và sửa lỗi kịch bản (không tự sửa bug thật của app), hỏi người dùng khi thiếu tham số môi trường, rồi sinh báo cáo (test_summary.md, pytest-html, Allure). Dùng khi người dùng nói "chạy test", "chạy lại bộ test và cho báo cáo", hoặc bước 4 (cuối) của autotest-pipeline.
+description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân loại và sửa lỗi kịch bản (không tự sửa bug thật của app), hỏi người dùng khi thiếu tham số môi trường, rồi sinh báo cáo (test_summary.md, pytest-html, Allure). Hỗ trợ chế độ trình diễn cho tester: chạy có màn hình, chậm từng bước, in chi tiết từng testcase ra console và dừng chờ bấm tiếp sau mỗi testcase. Dùng khi người dùng nói "chạy test", "chạy lại bộ test và cho báo cáo", hoặc bước 4 (cuối) của autotest-pipeline.
 ---
 
 # Autotest: Run Test (chạy, tự sửa/hỏi tham số, gen báo cáo)
@@ -18,19 +18,33 @@ thể đọc lại được, truy vết được về MatrixID.
    định nghĩa base URL...) thì dùng thẳng, không hỏi lại. Nếu **thiếu** →
    hỏi người dùng, không tự bịa URL/credentials/cổng.
 
-2. **Cài plugin báo cáo dùng chung** (nếu project chưa có): copy
-   `assets/autotest_reporting.py` (cùng thư mục với SKILL.md này) vào thư mục
-   chứa `conftest.py` của project, rồi khai báo trong `conftest.py`:
+2. **Cài 2 plugin dùng chung** (nếu project chưa có): copy
+   `assets/autotest_reporting.py` và `assets/autotest_demo.py` (cùng thư mục
+   với SKILL.md này) vào thư mục chứa `conftest.py` của project, rồi khai báo
+   trong `conftest.py`:
    ```python
-   pytest_plugins = ["autotest_reporting"]
+   pytest_plugins = ["autotest_reporting", "autotest_demo"]
 
    import autotest_reporting
    autotest_reporting.ENVIRONMENT.update({"App.URL": BASE_URL, "Browser": "Chromium (Playwright)"})
+
+   # Fixture browser PHẢI đọc demo_mode, nếu không cờ --demo sẽ không có tác dụng
+   # (vẫn chạy ẩn, vẫn nhanh) — tester không kiểm chứng bằng mắt được.
+   @pytest.fixture(scope="session")
+   def browser(demo_mode):
+       with sync_playwright() as p:
+           browser = p.chromium.launch(
+               headless=not demo_mode.headed,   # --demo -> hiện cửa sổ trình duyệt
+               slow_mo=demo_mode.slow_mo,       # --demo -> chậm lại từng thao tác (ms)
+           )
+           yield browser
+           browser.close()
    ```
-   Plugin này sinh `reports/test_summary.md` (truy vết theo MatrixID, có cột
-   số lần rerun) và `environment.properties` cho Allure. **Không tự viết lại
-   hook báo cáo cho từng project** — dùng plugin dùng chung để mọi project
-   ra cùng 1 định dạng báo cáo.
+   `autotest_reporting` sinh `reports/test_summary.md` (truy vết theo MatrixID,
+   có cột số lần rerun) và `environment.properties` cho Allure.
+   `autotest_demo` là chế độ trình diễn ở bước 6. **Không tự viết lại hook báo
+   cáo hay hook trình diễn cho từng project** — dùng plugin dùng chung để mọi
+   project ra cùng 1 định dạng.
 
 3. **Bật cơ chế rerun ở tầng pytest** (khuyến nghị cho CI):
    `pip install pytest-rerunfailures` rồi chạy với `--reruns 1 --reruns-delay 1`.
@@ -52,14 +66,48 @@ thể đọc lại được, truy vết được về MatrixID.
    Nếu project đã có script gói sẵn các tham số này (vd `scripts/run_tests.sh`
    **của project đang test**, không phải của thư mục skill), ưu tiên dùng nó.
 
-6. **Có fail → phân loại TRƯỚC khi hành động**:
+6. **Chế độ trình diễn — chạy có màn hình, chậm, dừng từng testcase**
+   (dùng khi tester muốn tự kiểm chứng bằng mắt, hoặc khi người dùng yêu cầu
+   "chạy cho tôi xem", "demo test", "chạy chậm lại"):
+   ```bash
+   pytest <thư mục test> --demo                    # dừng chờ Enter sau mỗi testcase
+   pytest <thư mục test> --demo --demo-pause=3     # tự chạy tiếp sau 3 giây
+   pytest <thư mục test> --demo --demo-pause=none  # không dừng, chỉ chậm + in chi tiết
+   pytest <thư mục test> --demo --demo-slowmo=800 --demo-step-delay=1
+   pytest <thư mục test> --demo -k "TC-4F2A91"     # trình diễn đúng 1 testcase
+   ```
+   Chế độ này (do `autotest_demo.py` cung cấp):
+   - **Trình duyệt hiện hình** (`headless=False`) và **chậm lại** từng thao tác
+     (`slow_mo`, mặc định 500ms) — cần fixture `browser` ở bước 2 đọc `demo_mode`.
+   - **In từng testcase ra console trước khi chạy**: số thứ tự/tổng số,
+     **MatrixID**, tên scenario, mô tả, feature + đường dẫn file, **toàn bộ dữ
+     liệu của dòng Examples** (mỗi factor 1 dòng) và **các bước Gherkin đã thay
+     giá trị thật**. Mỗi step được in lại ngay lúc nó chạy (`→ When ...`), step
+     lỗi in kèm exception.
+   - **Chạy tuần tự từng testcase, dừng chờ tester bấm tiếp**: `Enter` = case
+     tiếp theo · `s` = thôi dừng, chạy hết · `q` = dừng phiên. Tự ép tắt
+     `pytest-xdist` (không chạy song song) vì song song thì không xem được.
+   - Cuối mỗi case in `Kết quả: PASS/FAIL/SKIP`.
+
+   Quy tắc khi dùng:
+   - **Không lấy kết quả lần chạy demo làm kết quả chính thức** — vẫn phải có
+     1 lần chạy headless ở bước 5 để sinh báo cáo; demo chỉ để kiểm chứng mắt
+     thường. Nếu demo và headless cho kết quả khác nhau, đó là dấu hiệu test
+     phụ thuộc timing → điều tra, không bỏ qua.
+   - **Không bật `--demo` trong CI**: cần trình duyệt có màn hình và stdin là
+     terminal. Plugin tự bỏ qua bước dừng khi stdin không phải terminal, nhưng
+     phần headed/slow_mo vẫn làm CI chậm và dễ treo.
+   - Bộ test quá lớn thì đề xuất tester dùng `-k` để chọn nhóm testcase muốn
+     xem, thay vì ngồi bấm Enter vài chục lần.
+
+7. **Có fail → phân loại TRƯỚC khi hành động**:
    | Loại | Dấu hiệu | Hành động |
    |---|---|---|
    | Bug thật của app | Request/response hợp lý theo kịch bản nhưng kết quả nghiệp vụ sai (vd tổng tiền tính sai) | **KHÔNG tự sửa code app.** Báo cáo là bug kèm bằng chứng (request/response JSON, ảnh chụp màn hình từ attachment Allure) + MatrixID để tái hiện |
    | Lỗi kịch bản/selector | `TimeoutError` do selector không khớp, step thiếu, sai thứ tự thao tác | Tự sửa test code, chạy lại (tối đa 3 lần) |
    | Nghi flaky | Fail không nhất quán, pass sau rerun, lỗi timing/network | Xem cột "Lần chạy lại" trong `test_summary.md`; báo rõ là flaky và đề xuất nguyên nhân — KHÔNG im lặng cho qua vì "chạy lại thì pass" |
 
-7. **Tổng kết cho người dùng**: số scenario pass/fail/flaky, việc gì đã tự
+8. **Tổng kết cho người dùng**: số scenario pass/fail/flaky, việc gì đã tự
    sửa (kèm diff ngắn), việc gì là bug thật cần người review (kèm MatrixID),
    và đường dẫn report để mở.
 
@@ -69,6 +117,10 @@ thể đọc lại được, truy vết được về MatrixID.
 - `reports/test_summary.md` + `reports/report.html` được sinh ra; thêm
   `reports/allure-report/` nếu máy có Allure CLI (không có thì nêu rõ).
 - Không có sửa đổi nào vào code ứng dụng (app) trong bước này.
+- `conftest.py` của project đã khai báo `autotest_demo` và fixture `browser`
+  đọc `demo_mode` → `pytest --demo` chạy được thật (có cửa sổ trình duyệt,
+  chậm, dừng từng case). Nếu người dùng yêu cầu chạy trình diễn mà thiếu phần
+  này, phải bổ sung rồi mới báo xong.
 
 ## Khi nào KHÔNG tự quyết
 - Thiếu tham số môi trường bắt buộc (URL, tài khoản test, secret) → hỏi.

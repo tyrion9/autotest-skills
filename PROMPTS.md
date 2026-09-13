@@ -117,6 +117,23 @@ dữ liệu test, và xuất báo cáo đầy đủ.
 sửa, cái gì cần review) — mở `reports/allure-report/index.html` (nếu có) để
 xem chi tiết request/response từng scenario.
 
+### Prompt 4b — Chạy trình diễn để tester kiểm chứng bằng mắt
+
+```
+Dùng skill autotest-run-test, chạy bộ test ở chế độ trình diễn: mở trình duyệt
+có màn hình, chậm lại từng thao tác, in chi tiết từng testcase ra console và
+dừng chờ tôi bấm Enter sau mỗi testcase.
+```
+
+Claude sẽ chạy `pytest <thư mục test> --demo`. Khi đang dừng: `Enter` = case
+tiếp theo · `s` = thôi dừng, chạy hết · `q` = dừng phiên. Muốn tự chạy tiếp
+thay vì bấm tay thì thêm `--demo-pause=3` (giây); muốn xem chậm hơn nữa thì
+`--demo-slowmo=1000 --demo-step-delay=1.5`; muốn xem đúng 1 testcase thì
+`-k "TC-4F2A91"`.
+
+**Lưu ý**: kết quả chính thức + báo cáo vẫn lấy từ lần chạy headless bình
+thường; `--demo` chỉ để nhìn bằng mắt, đừng bật trong CI.
+
 ## Cách gộp 4 bước thành 1 prompt (dùng `autotest-pipeline`)
 
 ```

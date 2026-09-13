@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ product['name'] }} — Shop Demo{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('index') }}" data-testid="back-to-list">&larr; Về danh sách</a></p>
+
+<section class="detail detail--split" data-testid="product-detail" data-product-id="{{ product['id'] }}">
+  <img class="detail-image" src="{{ url_for('static', filename='images/' ~ (product['image'] or 'placeholder.svg')) }}"
+       alt="{{ product['name'] }}" data-testid="product-image">
+  <div class="detail-body">
+  <span class="tag" data-testid="product-category">{{ product['category_name'] }}</span>
+  <h1 data-testid="product-name">{{ product['name'] }}</h1>
+  <p class="price" data-testid="product-price" data-value="{{ product['price'] }}">{{ product['price'] | vnd }}</p>
+  <p data-testid="product-description">{{ product['description'] }}</p>
+  {% if product['bulky'] %}
+    <p class="tag tag--warn" data-testid="product-bulky-badge">
+      Hàng cồng kềnh — phụ phí vận chuyển 20.000 ₫
+    </p>
+  {% endif %}
+  {% if product['stock'] > 0 %}
+    <p class="muted" data-testid="product-stock" data-value="{{ product['stock'] }}">
+      Còn {{ product['stock'] }} sản phẩm
+    </p>
+  {% else %}
+    <p class="warn" data-testid="out-of-stock" data-value="0">Sản phẩm đã hết hàng</p>
+  {% endif %}
+
+  <form class="add-form" method="post" action="{{ url_for('cart_add') }}" data-testid="add-to-cart-form" novalidate>
+    <input type="hidden" name="product_id" value="{{ product['id'] }}">
+    <label for="quantity">Số lượng</label>
+    <input id="quantity" name="quantity" type="text" data-testid="input-quantity"
+           value="{{ form.get('quantity', '1') }}">
+    <button type="submit" class="btn btn--primary" data-testid="btn-add-to-cart"
+            {% if product['stock'] <= 0 %}disabled{% endif %}>Thêm vào giỏ hàng</button>
+  </form>
+  {% if errors.get('quantity') %}
+    <span class="error" data-testid="error-quantity">{{ errors['quantity'] }}</span>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}

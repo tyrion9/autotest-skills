@@ -1,0 +1,10 @@
+# Artifact do pipeline autotest-skills sinh ra — KHÔNG commit, chỉ giữ app.
+# Sinh lại bất cứ lúc nào bằng 4 skill: autotest-factor-analysis ->
+# autotest-testcase-pairwise -> autotest-gen-test -> autotest-run-test
+# (xem README mục "Bộ test E2E").
+testing/
+reports/
+pytest.ini
+
+# DB sinh từ db/seed_data.py
+*.sqlite3

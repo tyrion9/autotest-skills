@@ -65,6 +65,7 @@ testing/testcase-pairwise.xlsx        (hoặc testing/<feature>/testcase-pairwis
 testing/features/<feature>.feature
 testing/steps/test_<feature>_steps.py
 testing/autotest_reporting.py         (plugin báo cáo, copy từ skill autotest-run-test)
+testing/autotest_demo.py              (plugin trình diễn: --demo, copy từ skill autotest-run-test)
 reports/{test_summary.md, report.html, allure-report/}
 ```
 
