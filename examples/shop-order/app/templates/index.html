@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Danh sách sản phẩm — Shop Demo{% endblock %}
+
+{% block content %}
+<h1 data-testid="page-title">Danh sách sản phẩm</h1>
+
+<nav class="categories" data-testid="category-nav">
+  <a href="{{ url_for('index') }}"
+     class="chip {% if not selected_category %}chip--active{% endif %}"
+     data-testid="category-all">Tất cả</a>
+  {% for category in categories %}
+    <a href="{{ url_for('index', category=category['slug']) }}"
+       class="chip {% if selected_category == category['slug'] %}chip--active{% endif %}"
+       data-testid="category-{{ category['slug'] }}">{{ category['name'] }}</a>
+  {% endfor %}
+</nav>
+
+<p class="muted" data-testid="product-count" data-value="{{ products|length }}">
+  {{ products|length }} sản phẩm
+</p>
+
+{% if products %}
+<ul class="product-grid" data-testid="product-list">
+  {% for product in products %}
+  <li class="card" data-testid="product-card-{{ product['id'] }}">
+    <a class="thumb-link" href="{{ url_for('product_detail', product_id=product['id']) }}" tabindex="-1">
+      <img class="thumb" src="{{ url_for('static', filename='images/' ~ (product['image'] or 'placeholder.svg')) }}"
+           alt="{{ product['name'] }}" loading="lazy"
+           data-testid="product-image-{{ product['id'] }}">
+    </a>
+    <span class="tag" data-testid="product-category-{{ product['id'] }}">{{ product['category_name'] }}</span>
+    <h2 data-testid="product-name-{{ product['id'] }}">{{ product['name'] }}</h2>
+    <p class="price" data-testid="product-price-{{ product['id'] }}" data-value="{{ product['price'] }}">
+      {{ product['price'] | vnd }}
+    </p>
+    {% if product['stock'] > 0 %}
+      <p class="muted" data-testid="product-stock-{{ product['id'] }}" data-value="{{ product['stock'] }}">
+        Còn {{ product['stock'] }} sản phẩm
+      </p>
+    {% else %}
+      <p class="warn" data-testid="product-stock-{{ product['id'] }}" data-value="0">Hết hàng</p>
+    {% endif %}
+    <a class="btn" href="{{ url_for('product_detail', product_id=product['id']) }}"
+       data-testid="product-link-{{ product['id'] }}">Xem chi tiết</a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="warn" data-testid="empty-list">Không có sản phẩm nào trong danh mục này.</p>
+{% endif %}
+{% endblock %}

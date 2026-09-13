@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Shop Demo{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="{{ url_for('index') }}" data-testid="site-logo">🛒 Shop Demo</a>
+    <a class="cart-link" href="{{ url_for('cart_view') }}" data-testid="nav-cart">
+      Giỏ hàng
+      <span class="badge" data-testid="cart-badge" data-value="{{ cart_count }}">{{ cart_count }}</span>
+    </a>
+  </header>
+  <main class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class="flash" data-testid="flash-messages">
+          {% for message in messages %}
+            <li data-testid="flash-message">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

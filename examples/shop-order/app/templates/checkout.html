@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Đặt hàng — Shop Demo{% endblock %}
+
+{% block content %}
+<p><a href="{{ url_for('cart_view') }}" data-testid="back-to-cart">&larr; Về giỏ hàng</a></p>
+
+<h1 data-testid="page-title">Đặt hàng</h1>
+
+<section data-testid="checkout-page">
+  <h2>Chi tiết hàng</h2>
+  <table class="summary items-table" data-testid="checkout-items">
+    <thead>
+      <tr><th>Sản phẩm</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th></tr>
+    </thead>
+    <tbody>
+      {% for line in lines %}
+      <tr data-testid="checkout-line-{{ line['product_id'] }}">
+        <td class="cell-with-thumb" data-testid="checkout-item-name-{{ line['product_id'] }}">
+          <img class="thumb thumb--sm" src="{{ url_for('static', filename='images/' ~ (line['image'] or 'placeholder.svg')) }}"
+               alt="{{ line['name'] }}" loading="lazy"
+               data-testid="checkout-item-image-{{ line['product_id'] }}">
+          <span>
+            {{ line['name'] }}
+            {% if line['bulky'] %}
+              <span class="tag tag--warn" data-testid="checkout-item-bulky-{{ line['product_id'] }}">Cồng kềnh</span>
+            {% endif %}
+          </span>
+        </td>
+        <td data-testid="checkout-unit-price-{{ line['product_id'] }}" data-value="{{ line['unit_price'] }}">
+          {{ line['unit_price'] | vnd }}
+        </td>
+        <td data-testid="checkout-qty-{{ line['product_id'] }}" data-value="{{ line['quantity'] }}">
+          {{ line['quantity'] }}
+        </td>
+        <td data-testid="checkout-line-total-{{ line['product_id'] }}" data-value="{{ line['line_total'] }}">
+          {{ line['line_total'] | vnd }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <th colspan="3">Tạm tính</th>
+        <td data-testid="checkout-subtotal" data-value="{{ subtotal }}">{{ subtotal | vnd }}</td>
+      </tr>
+    </tfoot>
+  </table>
+  <p class="muted">Phí vận chuyển và phí thu hộ được tính sau khi chọn khu vực và phương thức thanh toán.</p>
+
+  {% if errors.get('cart') %}
+    <p class="error" data-testid="error-cart">{{ errors['cart'] }}</p>
+  {% endif %}
+
+  <h2>Thông tin nhận hàng</h2>
+  <form class="order-form" method="post" action="{{ url_for('create_order') }}" data-testid="order-form" novalidate>
+    <label for="customer_name">Họ tên người nhận *</label>
+    <input id="customer_name" name="customer_name" type="text" data-testid="input-name"
+           value="{{ form.get('customer_name', '') }}">
+    {% if errors.get('customer_name') %}
+      <span class="error" data-testid="error-name">{{ errors['customer_name'] }}</span>
+    {% endif %}
+
+    <label for="phone">Số điện thoại * <span class="muted">(10 chữ số, bắt đầu bằng 0)</span></label>
+    <input id="phone" name="phone" type="text" data-testid="input-phone" value="{{ form.get('phone', '') }}">
+    {% if errors.get('phone') %}
+      <span class="error" data-testid="error-phone">{{ errors['phone'] }}</span>
+    {% endif %}
+
+    <label for="email">Email <span class="muted">(không bắt buộc)</span></label>
+    <input id="email" name="email" type="text" data-testid="input-email" value="{{ form.get('email', '') }}">
+    {% if errors.get('email') %}
+      <span class="error" data-testid="error-email">{{ errors['email'] }}</span>
+    {% endif %}
+
+    <label for="address">Địa chỉ nhận hàng *</label>
+    <input id="address" name="address" type="text" data-testid="input-address" value="{{ form.get('address', '') }}">
+    {% if errors.get('address') %}
+      <span class="error" data-testid="error-address">{{ errors['address'] }}</span>
+    {% endif %}
+
+    <label for="region">Khu vực giao hàng *</label>
+    <select id="region" name="region" data-testid="select-region">
+      <option value="">-- Chọn khu vực --</option>
+      {% for value, label in regions.items() %}
+        <option value="{{ value }}" {% if form.get('region') == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if errors.get('region') %}
+      <span class="error" data-testid="error-region">{{ errors['region'] }}</span>
+    {% endif %}
+
+    <label for="payment_method">Phương thức thanh toán *</label>
+    <select id="payment_method" name="payment_method" data-testid="select-payment">
+      <option value="">-- Chọn phương thức --</option>
+      {% for value, label in payment_methods.items() %}
+        <option value="{{ value }}" {% if form.get('payment_method') == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if errors.get('payment_method') %}
+      <span class="error" data-testid="error-payment">{{ errors['payment_method'] }}</span>
+    {% endif %}
+
+    <label for="note">Ghi chú <span class="muted">(không bắt buộc)</span></label>
+    <input id="note" name="note" type="text" data-testid="input-note" value="{{ form.get('note', '') }}">
+    {% if errors.get('note') %}
+      <span class="error" data-testid="error-note">{{ errors['note'] }}</span>
+    {% endif %}
+
+    <button type="submit" class="btn btn--primary" data-testid="btn-place-order">Đặt hàng</button>
+  </form>
+</section>
+{% endblock %}

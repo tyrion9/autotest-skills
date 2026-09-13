@@ -37,7 +37,7 @@ testcase nào.
 | `autotest-factor-analysis` | Requirement + code thật → `factor.md` |
 | `autotest-testcase-pairwise` | `factor.md` → `testcase-pairwise.xlsx` (script `pict_to_xlsx.py`) |
 | `autotest-gen-test` | `testcase-pairwise.xlsx` → `.feature` + step defs, **tự verify** trước khi báo xong (script `xlsx_to_feature.py`) |
-| `autotest-run-test` | Chạy test, phân loại bug thật (không tự sửa app) / lỗi kịch bản (tự sửa) / flaky, sinh báo cáo |
+| `autotest-run-test` | Chạy test, phân loại bug thật (không tự sửa app) / lỗi kịch bản (tự sửa) / flaky, sinh báo cáo. Có **chế độ trình diễn** `--demo`: trình duyệt hiện hình, chậm từng bước, in chi tiết từng testcase, dừng chờ tester bấm tiếp |
 
 Xem chi tiết từng bước trong `skills/<tên-skill>/SKILL.md`.
 
@@ -53,7 +53,8 @@ Xem chi tiết từng bước trong `skills/<tên-skill>/SKILL.md`.
 | Giá trị chứa `\|` hoặc xuống dòng làm vỡ bảng Gherkin | Tự escape khi sinh Examples |
 | Flaky bị "chạy lại cho tới khi pass" | Hỗ trợ `pytest-rerunfailures`; case pass-sau-rerun bị đánh dấu **nghi flaky** trong báo cáo |
 | Mỗi project tự viết lại hook báo cáo | Plugin dùng chung `autotest_reporting.py` (test_summary.md + Allure environment) |
-| Bản thân công cụ không được kiểm thử | 31 unit test + CI chạy trên Node 22 & 24, kèm kiểm tra ví dụ không bị drift |
+| Tester không tin bộ test vì chỉ thấy dòng `29 passed` | Plugin `autotest_demo.py`: `--demo` chạy có màn hình, chậm lại, in MatrixID + dữ liệu + từng step Gherkin, dừng chờ bấm Enter từng testcase |
+| Bản thân công cụ không được kiểm thử | 32 unit test + CI chạy trên Node 22 & 24, kèm kiểm tra ví dụ không bị drift |
 
 ## Cài đặt
 
@@ -91,7 +92,7 @@ skill):
 
 ```bash
 pip install pytest openpyxl
-pytest tests -q                  # 31 unit test cho 2 script sinh testcase
+pytest tests -q                  # 32 unit test cho 2 script sinh testcase
 python scripts/validate_skills.py # kiểm tra frontmatter + file tham chiếu của mọi SKILL.md
 ```
 CI (`.github/workflows/ci.yml`) chạy 2 lệnh trên cộng với kiểm tra
@@ -113,6 +114,16 @@ vào tính năng "chọn đồ uống & thanh toán" của 1 app demo (Flask + S
 thư mục clean-room (không có sẵn file nào ở trên) và xác nhận: 27 dòng
 Pairwise khớp 100% từng ký tự với bộ ở đây; bộ test Python sinh ra chạy thật
 bằng Playwright cho kết quả **29/29 PASS**.
+
+`examples/shop-order/` — app demo **chạy được** (Flask + SQLite): xem hàng hoá
+theo category, giỏ hàng, màn hình đặt hàng riêng, lưu đơn + thông tin liên hệ.
+Dùng làm đối tượng để tự chạy lại cả 4 bước. **Chỉ app được commit** — artifact
+pipeline (`testing/`, `reports/`) bị ignore vì sinh lại được.
+
+Kèm `bugs/bugs.py` bật/tắt 6 lỗi nghiệp vụ gieo sẵn để đo bộ test có "răng"
+không. Lần chạy tham chiếu: 5 factor → 14 dòng pairwise + 10 case biên = 24
+scenario; app đúng cho **24/24 PASS**, bật 6 lỗi thì **10 FAIL** — bắt đủ cả 6.
+Xem `examples/shop-order/README.md`.
 
 ## Playwright: MCP vs thư viện Python
 
