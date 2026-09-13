@@ -47,6 +47,24 @@ khi báo cáo hoàn thành — không giao code chưa kiểm chứng.
    - Dùng `data-testid` ổn định trên UI (không dùng text hiển thị làm selector
      nếu UI đã có `data-testid`; nếu UI CHƯA có `data-testid` cho phần tử cần
      thao tác, báo cho người dùng — không tự đoán selector CSS mong manh).
+   - **Fixture `browser` phải nhận tham số chế độ trình diễn ngay từ đầu**, để
+     bước `autotest-run-test` chạy được `pytest --demo` (có màn hình, chậm,
+     dừng từng testcase) mà không phải sửa lại conftest:
+     ```python
+     @pytest.fixture(scope="session")
+     def browser(demo_mode):          # demo_mode do plugin autotest_demo cung cấp
+         with sync_playwright() as p:
+             browser = p.chromium.launch(
+                 headless=not demo_mode.headed,
+                 slow_mo=demo_mode.slow_mo,
+             )
+             yield browser
+             browser.close()
+     ```
+     Mặc định (không có cờ `--demo`) `demo_mode.headed=False`, `slow_mo=0` →
+     vẫn chạy headless, nhanh, hợp CI.
+   - **Viết docstring 1 dòng cho step/scenario khi có thể** — chế độ trình diễn
+     in docstring này ra console làm phần "Mô tả" của testcase.
    - **Oracle (giá trị kỳ vọng) PHẢI ĐỘC LẬP với code của app.** Đây là quy
      tắc quan trọng nhất của bước này:
      - ✅ ĐÚNG: đọc **dữ liệu thô** từ DB/API/config (giá gốc, phụ phí, thuế
@@ -97,6 +115,8 @@ khi báo cáo hoàn thành — không giao code chưa kiểm chứng.
   dừng lại báo cáo rõ lý do nếu không tự sửa được).
 - Không còn `# TODO` nào trong case Boundary mà chưa viết Given/When/Then cụ
   thể (hoặc đã báo rõ với người dùng phần nào còn để TODO và vì sao).
+- Fixture `browser` đã nhận `demo_mode` (sẵn sàng cho `pytest --demo` ở bước
+  chạy test), và mặc định không có cờ thì vẫn headless/nhanh.
 - Đề xuất cho người dùng thêm 2 lệnh `--check` (xlsx + feature) vào CI của
   project để bảo vệ tính đồng bộ về lâu dài.
 
