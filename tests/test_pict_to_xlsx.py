@@ -223,3 +223,28 @@ def test_integration_pict_loi_model_sai_cu_phap(pict_to_xlsx, tmp_path):
     with pytest.raises(pict_to_xlsx.PictToXlsxError) as exc:
         pict_to_xlsx.run_pict(model, order=2, seed=42)
     assert "pict-cli lỗi" in str(exc.value)
+
+
+def test_bao_loi_khi_factor_trung_ten_cot_danh_rieng(pict_to_xlsx, tmp_path, monkeypatch):
+    """Factor tên 'GhiChu' trùng cột dành riêng -> phải DỪNG, không ghi file hỏng.
+
+    Nếu để lọt, header xlsx có 2 cột 'GhiChu' và xlsx_to_feature.py đọc theo tên
+    cột sẽ lấy nhầm cột rỗng -> Examples mất sạch giá trị factor mà không báo gì.
+    """
+    monkeypatch.setattr(
+        pict_to_xlsx,
+        "run_pict",
+        lambda model, order, seed: [{"Region": "noi_thanh", "GhiChu": "co"}],
+    )
+    args = argparse.Namespace(
+        model=tmp_path / "model.txt",
+        gherkin_template=None,
+        factor=None,
+        order=2,
+        seed=42,
+        allow_unknown_placeholders=False,
+    )
+    with pytest.raises(pict_to_xlsx.PictToXlsxError) as err:
+        pict_to_xlsx.build_rows(args)
+    assert "GhiChu" in str(err.value)
+    assert "CoGhiChu" in str(err.value)  # có gợi ý cách sửa
