@@ -33,6 +33,11 @@ khi báo cáo hoàn thành — không giao code chưa kiểm chứng.
    - Nếu `.feature` ĐÃ tồn tại (đang cập nhật): so sánh khối `Scenario
      Outline` + `Examples` sinh ra với khối hiện có, chỉ thay phần đó, GIỮ
      NGUYÊN các `Scenario`/`Rule` khác đã có mà không phải do script quản lý.
+   - Tên Scenario mang sẵn `MatrixID` ổn định (`[TC-xxxxxx]`, `[BC-xxxxxx]`)
+     lấy từ xlsx — **không đổi/không bỏ tiền tố này**, vì báo cáo và truy vết
+     ngược về testcase dựa vào nó.
+   - Script tự escape ký tự `|` và làm phẳng xuống dòng trong ô Examples —
+     không cần xử lý tay, nhưng cũng đừng sửa tay bảng này.
 
 3. **Rà soát step definitions hiện có trước khi viết mới**: `grep` các hàm
    `@given/@when/@then` trong `testing/steps/*.py`, tái dùng step đã có (khớp
@@ -48,24 +53,33 @@ khi báo cáo hoàn thành — không giao code chưa kiểm chứng.
    - Với case Boundary do script để lại dạng `# TODO`: viết cụ thể
      Given/When/Then theo mô tả + kỳ vọng đã ghi trong comment.
 
-5. **Tự verify (bắt buộc, không bỏ qua)**:
-   a. `pytest <thư mục test> --collect-only -q` — phải chạy sạch, không lỗi
-      "step chưa định nghĩa" / lỗi cú pháp import.
-   b. Chạy thử thật (headless) — tối thiểu: toàn bộ nếu ít scenario, hoặc 1
-      scenario đại diện cho mỗi factor mới nếu bộ test đã lớn (dùng `-k`).
-   c. Có lỗi → phân loại: lỗi code test tự sửa (selector sai, thiếu import,
-      sai kiểu dữ liệu, timing) → sửa → lặp lại (a)-(b), tối đa 3 lần. Lỗi do
+5. **Tự verify (bắt buộc, không bỏ qua — 3 lớp)**:
+   a. **Đồng bộ dữ liệu**: chạy lại script với `--check <file>.feature` —
+      xác nhận `.feature` khớp 100% với xlsx (bắt trường hợp sửa tay bảng
+      Examples hoặc quên cập nhật sau khi đổi factor).
+   b. **Collect**: `pytest <thư mục test> --collect-only -q` — phải sạch,
+      không lỗi "step chưa định nghĩa"/lỗi import. Số test collect được phải
+      bằng số dòng trong xlsx.
+   c. **Chạy thật (headless)**: toàn bộ nếu ít scenario, hoặc tối thiểu 1
+      scenario đại diện cho mỗi factor/step mới nếu bộ test đã lớn (`-k`).
+   d. Có lỗi → phân loại: lỗi code test tự sửa (selector sai, thiếu import,
+      sai kiểu dữ liệu, timing) → sửa → lặp lại (a)-(c), tối đa 3 lần. Lỗi do
       thiếu thông tin nghiệp vụ (không biết kỳ vọng đúng là gì) → DỪNG, hỏi
       người dùng, không đoán đại một giá trị kỳ vọng.
 
+   **Không được báo "đã xong" khi chưa chạy đủ (a)+(b)+(c).** Nếu vì lý do môi
+   trường không chạy được (chưa cài browser, app không khởi động được), phải
+   nói rõ bước nào chưa verify được và vì sao, thay vì im lặng bỏ qua.
+
 ## Definition of done
-- `.feature` cập nhật/tạo mới đúng dữ liệu từ xlsx (không lệch số dòng
-  Examples, không thiếu case Boundary).
-- `pytest --collect-only` sạch.
+- `xlsx_to_feature.py --check <file>.feature` cho exit code 0.
+- `pytest --collect-only` sạch, số test = số dòng trong xlsx.
 - Đã chạy thử thật ít nhất 1 lần và pass (hoặc đã sửa tới khi pass, hoặc đã
   dừng lại báo cáo rõ lý do nếu không tự sửa được).
 - Không còn `# TODO` nào trong case Boundary mà chưa viết Given/When/Then cụ
   thể (hoặc đã báo rõ với người dùng phần nào còn để TODO và vì sao).
+- Đề xuất cho người dùng thêm 2 lệnh `--check` (xlsx + feature) vào CI của
+  project để bảo vệ tính đồng bộ về lâu dài.
 
 ## Khi nào KHÔNG tự quyết
 - UI thiếu `data-testid` cho phần tử cần thao tác → hỏi có nên thêm

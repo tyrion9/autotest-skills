@@ -66,7 +66,9 @@ testing/testcase-pairwise.xlsx.
 **Kiểm tra**: script tự in ra số dòng Pairwise/Boundary — đối chiếu với ước
 lượng thô (số tổ hợp đầy đủ = tích số level các factor) để thấy pairwise
 thực sự giảm đáng kể số dòng. Mở `.xlsx`, đọc vài dòng cột **Gherkin** xem
-có đọc hiểu được ngay không (không cần mở code).
+có đọc hiểu được ngay không (không cần mở code); xem sheet `meta` để biết
+model/seed/thống kê đã dùng. Cột `MatrixID` phải có dạng `TC-xxxxxx`/`BC-xxxxxx`
+(ID ổn định theo nội dung, không phải số thứ tự).
 
 ## Prompt 3 — Gen test
 
@@ -123,6 +125,18 @@ Dùng autotest-pipeline để tự động hoá kiểm thử pairwise cho tính 
 hỏi tôi nếu có điểm không rõ ràng (factor/constraint mơ hồ, thiếu tham số
 môi trường, hoặc gặp lỗi không tự sửa được).
 ```
+
+## Prompt 5 (làm 1 lần cho mỗi project) — gắn chống drift vào CI
+
+```
+Thêm vào CI của project 2 bước kiểm tra chống drift của autotest-skills:
+chạy pict_to_xlsx.py ... --check và xlsx_to_feature.py ... --check để CI fail
+nếu testcase-pairwise.xlsx hoặc .feature bị sửa tay / lệch khỏi factor.md.
+Dùng Node 22 hoặc 24 (yêu cầu của pict-cli).
+```
+
+Không có bước này, sau vài tháng `.xlsx`/`.feature` sẽ lệch khỏi `factor.md`
+mà không ai phát hiện — testcase trong Excel nói một đằng, test chạy một nẻo.
 
 ## Khi tính năng thay đổi (chạy lại 1 phần, không phải từ đầu)
 

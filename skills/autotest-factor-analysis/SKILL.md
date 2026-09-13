@@ -57,8 +57,19 @@ như thể đã xác nhận.
    `references/factor-md-template.md`, đặt tại
    `testing/factor/<ten-tinh-nang>.factor.md` (tạo thư mục nếu chưa có).
 
+   **Bảng mục 4 (Case biên) sẽ được script ở bước sau đọc tự động**, nên phải
+   giữ đúng dạng bảng markdown với cột mô tả (`Mô tả case`/`Description`),
+   cột input (`Input`/`Đầu vào`), cột kỳ vọng (`Kết quả mong đợi`/`Expected`).
+   Script chấp nhận vài biến thể tên cột nhưng sẽ **báo lỗi dừng hẳn** nếu
+   không nhận ra cột mô tả — đừng tự đổi cấu trúc bảng này.
+
 8. **Tự review**: đọc lại factor.md, đối chiếu từng dòng với requirement gốc
    — không thiếu field quan trọng, không có factor không có căn cứ.
+
+9. **Rà lại quyết định "pairwise hay case biên"** cho từng factor: factor bị
+   xếp nhầm vào mục 4 sẽ KHÔNG bao giờ được test tổ hợp với factor khác, và
+   không có cơ chế nào cảnh báo điều đó về sau. Nếu phân vân, mặc định đưa
+   vào pairwise (an toàn hơn), hoặc hỏi người dùng.
 
 ## Definition of done
 - `factor.md` tồn tại, đủ 5 mục (Nguồn, Factor & Levels, Constraints, Case

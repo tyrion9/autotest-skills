@@ -43,15 +43,49 @@ Kết quả test + report.html + allure-report/ + test_summary.md
 4. Khi chạy lại pipeline cho 1 thay đổi nhỏ (vd thêm 1 factor), chỉ cần chạy
    lại từ bước bị ảnh hưởng trở đi (không nhất thiết làm lại từ đầu) — nhờ
    các artifact trung gian đã lưu thành file.
+5. **Kết thúc pipeline lần đầu cho 1 project, luôn đề xuất gắn 2 lệnh
+   `--check` vào CI của project** (xem mục "Bảo vệ khỏi drift" bên dưới) —
+   nếu không, `.xlsx`/`.feature` sẽ dần lệch khỏi `factor.md` mà không ai
+   phát hiện.
+
+## Yêu cầu môi trường
+
+- **Node.js 22 hoặc 24** (pict-cli khai `engines: ^22 || ^24`; Node 18/20 trên
+  nhiều CI runner sẽ không chạy được) + `npx`.
+- Python 3.10+ với `openpyxl`; `pytest`, `pytest-bdd`, `playwright` cho bộ test;
+  khuyến nghị `pytest-rerunfailures` (xử lý flaky ở tầng CI) và Allure CLI.
 
 ## Quy ước thư mục artifact (mặc định, có thể điều chỉnh theo project)
 
 ```
 testing/factor/<feature>.factor.md
+testing/factor/<feature>.model.txt              (model PICT)
+testing/factor/<feature>.gherkin-template.txt   (step Gherkin + <TenFactor>)
 testing/testcase-pairwise.xlsx        (hoặc testing/<feature>/testcase-pairwise.xlsx nếu nhiều luồng)
 testing/features/<feature>.feature
 testing/steps/test_<feature>_steps.py
+testing/autotest_reporting.py         (plugin báo cáo, copy từ skill autotest-run-test)
 reports/{test_summary.md, report.html, allure-report/}
+```
+
+## Bảo vệ khỏi drift (bắt buộc cho dùng lâu dài)
+
+Hai lệnh sau nên chạy trong CI của project mỗi PR — chúng phát hiện khi
+`.xlsx`/`.feature` bị sửa tay hoặc `factor.md`/model đã đổi mà chưa regenerate:
+
+```bash
+python <skill autotest-testcase-pairwise>/scripts/pict_to_xlsx.py \
+  testing/factor/<feature>.model.txt \
+  --gherkin-template testing/factor/<feature>.gherkin-template.txt \
+  --factor testing/factor/<feature>.factor.md \
+  -o testing/testcase-pairwise.xlsx --check
+
+python <skill autotest-gen-test>/scripts/xlsx_to_feature.py \
+  testing/testcase-pairwise.xlsx \
+  --gherkin-template testing/factor/<feature>.gherkin-template.txt \
+  --feature-name "..." --scenario-title "..." \
+  --background ... --then-steps ... \
+  --check testing/features/<feature>.feature
 ```
 
 Xem chi tiết từng bước ở skill con: `autotest-factor-analysis`,

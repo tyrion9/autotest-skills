@@ -8,56 +8,72 @@ description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân lo
 ## Mục tiêu
 Chạy bộ test tới cùng, phân biệt rõ 3 loại lỗi (bug thật / lỗi kịch bản /
 flaky), chỉ tự sửa loại mình được phép sửa, và luôn kết thúc bằng báo cáo có
-thể đọc lại được.
+thể đọc lại được, truy vết được về MatrixID.
 
 ## Các bước
 
 1. **Xác định tham số chạy**: base URL của app, cách seed dữ liệu test, biến
-   môi trường cần thiết (vd cổng, thư mục DB test), headless/headed, có chạy
-   song song không. Nếu **suy luận được từ code có sẵn** (vd project đã có
-   `scripts/run_tests.sh`, `conftest.py` định nghĩa base URL) thì dùng thẳng,
-   không hỏi lại. Nếu **thiếu** (project mới, chưa có mặc định) → hỏi người
-   dùng, không tự bịa URL/credentials/cổng.
+   môi trường cần thiết, headless/headed, có chạy song song không. Nếu **suy
+   luận được từ code có sẵn** (project đã có script chạy test, `conftest.py`
+   định nghĩa base URL...) thì dùng thẳng, không hỏi lại. Nếu **thiếu** →
+   hỏi người dùng, không tự bịa URL/credentials/cổng.
 
-2. **Seed dữ liệu test** bằng script seed sẵn có của project (không tự viết
-   script seed mới nếu đã có sẵn một cái).
+2. **Cài plugin báo cáo dùng chung** (nếu project chưa có): copy
+   `assets/autotest_reporting.py` (cùng thư mục với SKILL.md này) vào thư mục
+   chứa `conftest.py` của project, rồi khai báo trong `conftest.py`:
+   ```python
+   pytest_plugins = ["autotest_reporting"]
 
-3. **Chạy toàn bộ bộ test** theo đúng pipeline đã thiết lập của project (vd
-   `bash scripts/run_tests.sh` trong ví dụ cà phê — script này tự sinh cả 3
-   tầng báo cáo và tự phát hiện có Allure CLI hay không).
+   import autotest_reporting
+   autotest_reporting.ENVIRONMENT.update({"App.URL": BASE_URL, "Browser": "Chromium (Playwright)"})
+   ```
+   Plugin này sinh `reports/test_summary.md` (truy vết theo MatrixID, có cột
+   số lần rerun) và `environment.properties` cho Allure. **Không tự viết lại
+   hook báo cáo cho từng project** — dùng plugin dùng chung để mọi project
+   ra cùng 1 định dạng báo cáo.
 
-4. **Có fail → phân loại trước khi hành động**:
+3. **Bật cơ chế rerun ở tầng pytest** (khuyến nghị cho CI):
+   `pip install pytest-rerunfailures` rồi chạy với `--reruns 1 --reruns-delay 1`.
+   Mục đích: flaky được xử lý bằng CƠ CHẾ chạy được trong CI, không phụ thuộc
+   việc người/AI nhớ chạy lại tay. Case pass sau rerun sẽ bị đánh dấu "nghi
+   flaky" trong `test_summary.md` — KHÔNG coi là pass sạch.
+
+4. **Seed dữ liệu test** bằng script seed sẵn có của project (không tự viết
+   script seed mới nếu đã có).
+
+5. **Chạy toàn bộ bộ test**, ví dụ:
+   ```bash
+   pytest <thư mục test> \
+     --html=reports/report.html --self-contained-html \
+     --alluredir=reports/allure-results --clean-alluredir \
+     --reruns 1 --reruns-delay 1
+   allure generate reports/allure-results --output reports/allure-report --clean
+   ```
+   Nếu project đã có script gói sẵn các tham số này (vd `scripts/run_tests.sh`
+   **của project đang test**, không phải của thư mục skill), ưu tiên dùng nó.
+
+6. **Có fail → phân loại TRƯỚC khi hành động**:
    | Loại | Dấu hiệu | Hành động |
    |---|---|---|
-   | Bug thật của app | Request/response hợp lý theo kịch bản nhưng kết quả nghiệp vụ sai (vd tổng tiền tính sai) | **KHÔNG tự sửa code app.** Báo cáo là bug, kèm bằng chứng cụ thể (request/response JSON, ảnh chụp màn hình — lấy từ attachment Allure nếu có) |
+   | Bug thật của app | Request/response hợp lý theo kịch bản nhưng kết quả nghiệp vụ sai (vd tổng tiền tính sai) | **KHÔNG tự sửa code app.** Báo cáo là bug kèm bằng chứng (request/response JSON, ảnh chụp màn hình từ attachment Allure) + MatrixID để tái hiện |
    | Lỗi kịch bản/selector | `TimeoutError` do selector không khớp, step thiếu, sai thứ tự thao tác | Tự sửa test code, chạy lại (tối đa 3 lần) |
-   | Nghi flaky | Fail không nhất quán, lỗi timing/network tạm thời | Chạy lại có kiểm soát 1 lần; còn fail nữa thì coi là lỗi thật (không tự động retry vô hạn để "cho qua") |
+   | Nghi flaky | Fail không nhất quán, pass sau rerun, lỗi timing/network | Xem cột "Lần chạy lại" trong `test_summary.md`; báo rõ là flaky và đề xuất nguyên nhân — KHÔNG im lặng cho qua vì "chạy lại thì pass" |
 
-5. **Sinh báo cáo** (giữ nguyên 3 tầng đã có trong ví dụ cà phê, áp dụng cho
-   mọi project dùng bộ skill này):
-   - `reports/test_summary.md` — 1 dòng/scenario, có MatrixID.
-   - `reports/report.html` — pytest-html.
-   - `reports/allure-report/index.html` — chi tiết nhất, có request/response,
-     ảnh chụp màn hình, tham số theo MatrixID (nếu project đã cấu hình Allure
-     như hướng dẫn trong README của ví dụ cà phê).
-
-6. **Tổng kết cho người dùng**: số scenario pass/fail, việc gì đã tự sửa
-   (kèm diff ngắn gọn), việc gì là bug thật cần người review, và đường dẫn
-   report để mở.
+7. **Tổng kết cho người dùng**: số scenario pass/fail/flaky, việc gì đã tự
+   sửa (kèm diff ngắn), việc gì là bug thật cần người review (kèm MatrixID),
+   và đường dẫn report để mở.
 
 ## Definition of done
-- Có kết quả chạy thật cuối cùng (pass hoặc fail đã phân loại rõ), không kết
-  luận "chắc là do X" mà chưa xác minh.
-- 3 tầng báo cáo được sinh ra (hoặc nêu rõ tầng nào bị bỏ qua và vì sao, vd
-  chưa cài Allure CLI).
-- Không có sửa đổi nào vào code ứng dụng (app) trong bước này — mọi bug thật
-  chỉ được báo cáo, việc sửa app là quyết định của người dùng/dev.
+- Có kết quả chạy thật cuối cùng, mọi fail đã được phân loại rõ (không kết
+  luận "chắc là do X" mà chưa xác minh bằng bằng chứng).
+- `reports/test_summary.md` + `reports/report.html` được sinh ra; thêm
+  `reports/allure-report/` nếu máy có Allure CLI (không có thì nêu rõ).
+- Không có sửa đổi nào vào code ứng dụng (app) trong bước này.
 
 ## Khi nào KHÔNG tự quyết
-- Thiếu tham số môi trường bắt buộc (URL, tài khoản test, secret) → hỏi,
-  không tự bịa giá trị "tạm".
+- Thiếu tham số môi trường bắt buộc (URL, tài khoản test, secret) → hỏi.
 - Không chắc 1 fail là bug thật hay lỗi kịch bản sau khi đã xem
-  request/response → nêu rõ nghi vấn với bằng chứng, để người dùng quyết định
-  thay vì tự gắn nhãn.
-- Muốn "sửa" 1 fail bằng cách nới lỏng assertion (vd bỏ bớt điều kiện check)
-  → KHÔNG được làm — đó là che giấu lỗi chứ không phải sửa lỗi.
+  request/response → nêu rõ nghi vấn kèm bằng chứng, để người dùng quyết định.
+- Muốn "sửa" 1 fail bằng cách nới lỏng assertion, bỏ bớt điều kiện check,
+  hoặc tăng `--reruns` cho tới khi pass → **KHÔNG được làm**: đó là che giấu
+  lỗi, không phải sửa lỗi.

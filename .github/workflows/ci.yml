@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # pict-cli@0.2 khai engines: ^22 || ^24 -> test đúng 2 dòng LTS được hỗ trợ
+        node-version: ["22", "24"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cài dependencies
+        run: pip install pytest openpyxl
+
+      - name: Unit test cho 2 script sinh testcase
+        run: pytest tests -q
+
+      - name: Kiểm tra ví dụ chưa bị drift — testcase-pairwise.xlsx
+        working-directory: examples/cafe-checkout
+        run: |
+          python ../../skills/autotest-testcase-pairwise/scripts/pict_to_xlsx.py \
+            checkout.model.txt \
+            --gherkin-template checkout.gherkin-template.txt \
+            --factor checkout.factor.md \
+            -o testcase-pairwise.xlsx \
+            --check
+
+      - name: Kiểm tra ví dụ chưa bị drift — checkout.feature
+        working-directory: examples/cafe-checkout
+        run: |
+          python ../../skills/autotest-gen-test/scripts/xlsx_to_feature.py \
+            testcase-pairwise.xlsx \
+            --gherkin-template checkout.gherkin-template.txt \
+            --feature-name "Chọn đồ uống và thanh toán tại quán cà phê" \
+            --scenario-title "Thêm đồ uống theo tuỳ chọn và thanh toán ra đúng tổng tiền" \
+            --background checkout.background.txt \
+            --then-steps checkout.then-steps.txt \
+            --check checkout.feature
+
+  lint-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Kiểm tra frontmatter của mọi SKILL.md
+        run: python scripts/validate_skills.py

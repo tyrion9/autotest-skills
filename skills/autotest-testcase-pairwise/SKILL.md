@@ -48,24 +48,39 @@ Từ `factor.md` (bảng Factor & Levels + Constraints + Case biên), sinh ra
      --factor testing/factor/<feature>.factor.md \
      -o testing/testcase-pairwise.xlsx
    ```
-   (Cần `pip install openpyxl` nếu chưa có trong venv của project đang test.)
+   Yêu cầu môi trường: **Node.js 22 hoặc 24** (pict-cli khai
+   `engines: ^22 || ^24`) và `pip install openpyxl` trong venv của project.
+
+   Cờ hữu ích:
+   - `--order 3` : phủ 3-wise thay vì pairwise (chỉ khi người dùng yêu cầu).
+   - `--seed N` : đổi seed (mặc định 42) — ĐỔI SEED LÀ ĐỔI TOÀN BỘ MA TRẬN,
+     chỉ làm khi có lý do rõ ràng.
+   - `--allow-unknown-placeholders` : giữ nguyên `<...>` không phải tên factor
+     (vd thẻ HTML trong text). Mặc định script BÁO LỖI khi gặp placeholder lạ
+     để bắt lỗi gõ sai tên factor.
+   - `--check` : không ghi file, chỉ so sánh với xlsx đang có → exit 1 nếu
+     lệch. Dùng trong CI để phát hiện xlsx bị sửa tay hoặc model/factor đã đổi
+     mà chưa regenerate.
 
 6. **Tự kiểm**:
-   - Số dòng Pairwise + Boundary khớp: dòng in ra ở cuối script khớp số dòng
-     mong đợi (đếm factor × level thô để ước lượng, không cần bằng — pairwise
-     luôn ít hơn tổ hợp đầy đủ).
-   - Mở lại file (đọc bằng `openpyxl` hoặc liệt kê nhanh) xác nhận cột
-     `Gherkin` của vài dòng Pairwise có nội dung hợp lý, không lỗi
-     `KeyError` (placeholder sai tên cột).
-   - Đối chiếu 1-2 dòng với Constraint trong factor.md (vd dòng nào có factor
-     bị ràng buộc thì giá trị liên quan phải đúng theo constraint).
+   - Đọc dòng tổng kết script in ra: số Pairwise/Boundary/factor có hợp lý không.
+   - Mở lại file, xác nhận cột `Gherkin` của vài dòng Pairwise đọc hiểu được
+     (không còn `<TenFactor>` chưa thay).
+   - Đối chiếu 1-2 dòng với Constraint trong factor.md (dòng có factor bị ràng
+     buộc phải đúng theo constraint).
+   - Xem sheet `meta` xác nhận `order`/`seed`/`pict_stats` đúng như mong đợi.
+   - Chạy lại với `--check` để chắc chắn file trên đĩa khớp với model hiện tại.
 
 ## Definition of done
 - `testing/testcase-pairwise.xlsx` tồn tại, đúng schema (xem
-  `references/testcase-xlsx-schema.md`), mở được không lỗi.
+  `references/testcase-xlsx-schema.md`), có đủ 2 sheet (`testcase-pairwise` +
+  `meta`).
 - Mọi Constraint trong factor.md đều được phản ánh đúng trong dữ liệu sinh ra
   (không có dòng nào vi phạm ràng buộc).
-- Các case Boundary trong factor.md mục 4 đều có mặt (Loai=Boundary).
+- Các case Boundary trong factor.md mục 4 đều có mặt (Loai=Boundary) — nếu
+  script in cảnh báo về bảng case biên (thiếu cột/không có dòng), phải xử lý
+  cảnh báo đó chứ không bỏ qua.
+- Chạy `--check` cho exit code 0.
 
 ## Khi nào KHÔNG tự quyết
 - Constraint trong factor.md không dịch được sang cú pháp PICT rõ ràng → hỏi
