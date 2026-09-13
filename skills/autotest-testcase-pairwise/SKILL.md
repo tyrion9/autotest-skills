@@ -23,13 +23,13 @@ Từ `factor.md` (bảng Factor & Levels + Constraints + Case biên), sinh ra
 
 3. **Viết `<feature>.gherkin-template.txt`**: mỗi dòng 1 step Gherkin đã có từ
    khoá (When/And...), placeholder dùng đúng cú pháp Scenario Outline
-   `<TenFactor>` khớp tên cột model — vd `When khách chọn đồ uống "<Drink>"`.
-   Đây là bước CẦN phán đoán ngôn ngữ (đọc UI/feature file có sẵn của tính
-   năng, hoặc theo convention project đang dùng) — làm 1 lần cho cả feature,
-   không lặp lại cho từng dòng dữ liệu. File này được **tái dùng nguyên vẹn**
-   ở bước `autotest-gen-test` để dựng khối `Scenario Outline` (không viết lại
-   lần 2). Ví dụ tham khảo cách hành văn: `testing/features/checkout.feature`
-   (dự án ví dụ cà phê trong repo này).
+   `<TenFactor>` khớp tên cột model — vd `When khách chọn khu vực giao hàng
+   "<Region>"`. Đây là bước CẦN phán đoán ngôn ngữ (đọc UI/feature file có sẵn
+   của tính năng, hoặc theo convention project đang dùng) — làm 1 lần cho cả
+   feature, không lặp lại cho từng dòng dữ liệu. File này được **tái dùng
+   nguyên vẹn** ở bước `autotest-gen-test` để dựng khối `Scenario Outline`
+   (không viết lại lần 2). Ví dụ tham khảo cách hành văn: xem bước "Prompt 2"
+   trong `PROMPTS.md` (chạy trên `examples/shop-order/` của repo này).
 
 4. **Chạy pict-cli qua skill `design-pairwise-tests`** để sinh ma trận (mặc
    định pairwise `-o 2`; hỏi người dùng nếu cần n-wise mạnh hơn) — không tự

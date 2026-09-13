@@ -31,28 +31,6 @@ jobs:
       - name: Unit test cho 2 script sinh testcase
         run: pytest tests -q
 
-      - name: Kiểm tra ví dụ chưa bị drift — testcase-pairwise.xlsx
-        working-directory: examples/cafe-checkout
-        run: |
-          python ../../skills/autotest-testcase-pairwise/scripts/pict_to_xlsx.py \
-            checkout.model.txt \
-            --gherkin-template checkout.gherkin-template.txt \
-            --factor checkout.factor.md \
-            -o testcase-pairwise.xlsx \
-            --check
-
-      - name: Kiểm tra ví dụ chưa bị drift — checkout.feature
-        working-directory: examples/cafe-checkout
-        run: |
-          python ../../skills/autotest-gen-test/scripts/xlsx_to_feature.py \
-            testcase-pairwise.xlsx \
-            --gherkin-template checkout.gherkin-template.txt \
-            --feature-name "Chọn đồ uống và thanh toán tại quán cà phê" \
-            --scenario-title "Thêm đồ uống theo tuỳ chọn và thanh toán ra đúng tổng tiền" \
-            --background checkout.background.txt \
-            --then-steps checkout.then-steps.txt \
-            --check checkout.feature
-
   lint-skills:
     runs-on: ubuntu-latest
     steps:

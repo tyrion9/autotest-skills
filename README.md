@@ -54,7 +54,8 @@ Xem chi tiết từng bước trong `skills/<tên-skill>/SKILL.md`.
 | Flaky bị "chạy lại cho tới khi pass" | Hỗ trợ `pytest-rerunfailures`; case pass-sau-rerun bị đánh dấu **nghi flaky** trong báo cáo |
 | Mỗi project tự viết lại hook báo cáo | Plugin dùng chung `autotest_reporting.py` (test_summary.md + Allure environment) |
 | Tester không tin bộ test vì chỉ thấy dòng `29 passed` | Plugin `autotest_demo.py`: `--demo` chạy có màn hình, chậm lại, in MatrixID + dữ liệu + từng step Gherkin, dừng chờ bấm Enter từng testcase |
-| Bản thân công cụ không được kiểm thử | 32 unit test + CI chạy trên Node 22 & 24, kèm kiểm tra ví dụ không bị drift |
+| Bản thân công cụ không được kiểm thử | 32 unit test cho 2 script sinh testcase, chạy trên Node 22 & 24 |
+| Không biết bộ skill có thật sự bắt được bug hay không | `examples/shop-order/` có 6 lỗi nghiệp vụ gieo sẵn, bật/tắt được, để tự đo trước khi tin dùng — xem mục "Ví dụ: shop-order" bên dưới |
 
 ## Cài đặt
 
@@ -95,35 +96,28 @@ pip install pytest openpyxl
 pytest tests -q                  # 32 unit test cho 2 script sinh testcase
 python scripts/validate_skills.py # kiểm tra frontmatter + file tham chiếu của mọi SKILL.md
 ```
-CI (`.github/workflows/ci.yml`) chạy 2 lệnh trên cộng với kiểm tra
-`examples/cafe-checkout/` chưa bị drift (`--check` cho cả xlsx lẫn `.feature`).
+CI (`.github/workflows/ci.yml`) chạy 2 lệnh trên, trên cả Node 22 và 24.
 
 ## Cách dùng — prompt từng bước
 
 Xem **[`PROMPTS.md`](./PROMPTS.md)**: prompt mẫu (kèm bản đã điền theo ví dụ
-cafe-checkout) cho từng bước 1→4, cách kiểm tra kết quả sau mỗi bước, prompt
-gộp dùng `autotest-pipeline`, và cách chạy lại 1 phần khi tính năng đổi nhỏ.
+`examples/shop-order`) cho từng bước 1→4, cách kiểm tra kết quả sau mỗi bước,
+prompt gộp dùng `autotest-pipeline`, cách chạy lại 1 phần khi tính năng đổi
+nhỏ, và **hướng dẫn riêng để săn 6 lỗi cố ý trong shop-order rồi báo cáo**.
 
-## Ví dụ đã validate
+## Ví dụ: `examples/shop-order/`
 
-`examples/cafe-checkout/` — artifact thật sinh ra khi áp dụng bộ skill này
-vào tính năng "chọn đồ uống & thanh toán" của 1 app demo (Flask + SQLite):
-`checkout.factor.md` → `checkout.model.txt` +
-`checkout.gherkin-template.txt` → `testcase-pairwise.xlsx` (27 dòng Pairwise
-+ 2 Boundary) → `checkout.feature`. Đã chạy lại toàn bộ quy trình này trong 1
-thư mục clean-room (không có sẵn file nào ở trên) và xác nhận: 27 dòng
-Pairwise khớp 100% từng ký tự với bộ ở đây; bộ test Python sinh ra chạy thật
-bằng Playwright cho kết quả **29/29 PASS**.
+App demo **chạy được** (Flask + SQLite) — xem hàng hoá theo category, giỏ
+hàng, màn hình đặt hàng riêng, lưu đơn + thông tin liên hệ. Dùng làm đối
+tượng để tự chạy lại cả 4 bước từ đầu. **Chỉ app được commit** — artifact
+pipeline (`testing/`, `reports/`) bị ignore vì sinh lại được bằng skill.
 
-`examples/shop-order/` — app demo **chạy được** (Flask + SQLite): xem hàng hoá
-theo category, giỏ hàng, màn hình đặt hàng riêng, lưu đơn + thông tin liên hệ.
-Dùng làm đối tượng để tự chạy lại cả 4 bước. **Chỉ app được commit** — artifact
-pipeline (`testing/`, `reports/`) bị ignore vì sinh lại được.
-
-Kèm `bugs/bugs.py` bật/tắt 6 lỗi nghiệp vụ gieo sẵn để đo bộ test có "răng"
-không. Lần chạy tham chiếu: 5 factor → 14 dòng pairwise + 10 case biên = 24
-scenario; app đúng cho **24/24 PASS**, bật 6 lỗi thì **10 FAIL** — bắt đủ cả 6.
-Xem `examples/shop-order/README.md`.
+Kèm `bugs/bugs.py`: bật/tắt **6 lỗi nghiệp vụ gieo sẵn** (mặc định tắt, app
+chạy đúng) để tự đo bộ test sinh ra có "răng" hay không — mutation testing.
+Lần chạy tham chiếu: 5 factor → 14 dòng pairwise + 10 case biên = 24
+scenario; app đúng cho **24/24 PASS**, bật cả 6 lỗi thì **10 FAIL** — bắt đủ
+cả 6. Xem mô tả app + lỗi cố ý trong `examples/shop-order/README.md`, và
+prompt từng bước để tự săn bug trong `PROMPTS.md`.
 
 ## Playwright: MCP vs thư viện Python
 

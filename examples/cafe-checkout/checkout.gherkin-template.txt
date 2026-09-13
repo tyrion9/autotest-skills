@@ -1,5 +1,0 @@
-When khách chọn đồ uống "<Drink>"
-And khách chọn size "<Size>", đường "<Sugar>", đá "<Ice>", topping "<Topping>"
-And khách nhập số lượng <Quantity> và thêm vào giỏ hàng
-And khách chọn phương thức thanh toán "<PaymentMethod>"
-And khách nhấn nút thanh toán
