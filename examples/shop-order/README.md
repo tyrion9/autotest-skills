@@ -1,9 +1,12 @@
 # Ví dụ: App "Shop đặt hàng online" (Flask + SQLite)
 
 App demo **chạy được**, dùng làm đối tượng để thử bộ skill `autotest-*`.
-Khác với `examples/cafe-checkout/` (chỉ chứa artifact output của quy trình),
-thư mục này **chỉ có app, chưa có test nào** — test sẽ do bạn sinh ra bằng
-skill.
+Thư mục này **chỉ chứa app, chưa có test nào** — test sẽ do bạn sinh ra bằng
+skill (xem `PROMPTS.md` ở gốc repo).
+
+App còn có **6 lỗi nghiệp vụ gieo sẵn** (`bugs/`), mặc định đang **tắt** —
+bật lên để tự đo xem bộ test sinh ra có thật sự phát hiện được bug không.
+Xem mục "Lỗi cố ý (mutation testing)" bên dưới.
 
 ## Tính năng
 
@@ -148,6 +151,35 @@ scenario, app đúng cho **24/24 PASS**.
 
 Chạy trình diễn để xem bằng mắt: `pytest testing --demo` (Enter = case tiếp
 theo · `s` = chạy hết · `q` = dừng).
+
+## Lỗi cố ý (mutation testing)
+
+`bugs/bugs.py` bật/tắt **6 lỗi nghiệp vụ** đã gieo sẵn vào code app (mặc định
+**tắt** — app chạy đúng như mô tả ở mục "Quy tắc nghiệp vụ"). Mục đích: đo
+xem 1 bộ test sinh ra từ requirement có thật sự "có răng" hay không — test
+xanh mà không fail khi app sai thì test đó vô dụng.
+
+```bash
+.venv/bin/python bugs/bugs.py status       # lỗi nào đang bật
+.venv/bin/python bugs/bugs.py apply        # bật cả 6 lỗi
+.venv/bin/python bugs/bugs.py apply --only 1,4
+.venv/bin/python bugs/bugs.py revert       # gỡ sạch, app về đúng — làm trước khi commit
+```
+
+Đặc điểm chung của cả 6 lỗi: **không làm app crash**, chỉ trả kết quả sai —
+đúng kiểu bug lọt qua smoke test, nằm rải rác ở công thức tính tiền
+(`app/pricing.py`), validate (`app/app.py`) và quy tắc giỏ hàng
+(`app/cart.py`). Mỗi lỗi chỉ lộ ra với **một kiểu test cụ thể** (case biên
+đúng tại 1 mốc, giỏ nhiều dòng, tổ hợp pairwise giữa 2 factor, case negative,
+thao tác lặp lại, hay assert đúng 1 trường) — nên một bộ test hời hợt (chỉ
+test "đường vui" happy-path, giỏ 1 sản phẩm) sẽ không bắt được đủ 6 lỗi dù
+đã bật hết.
+
+Đáp án đầy đủ (lỗi nằm ở dòng nào, vì sao chỉ lộ với kiểu test đó) để trong
+`bugs/README.md` — **cố tình để riêng, đừng đọc trước khi tự chạy pipeline
+xong**, không thì tự lộ đề. Prompt từng bước để bật lỗi, chạy skill, và viết
+báo cáo bug từ kết quả: xem mục **"Săn bug trong shop-order"** ở cuối
+`PROMPTS.md` tại gốc repo.
 
 ## Giới hạn có chủ ý
 

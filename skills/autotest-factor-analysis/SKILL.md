@@ -27,9 +27,9 @@ như thể đã xác nhận.
    - Đọc code thật liên quan: template/form UI (field nào, kiểu dữ liệu, giá
      trị mặc định), route/handler xử lý (validation, business rule), model/DB
      schema (cột, kiểu, ràng buộc NOT NULL/FK/CHECK), config liên quan.
-   - Nếu có sẵn ví dụ tham khảo trong repo (như `app/templates/index.html`,
-     `app/app.py`, `db/schema.sql` của ví dụ cà phê), dùng làm mẫu về mức độ
-     chi tiết cần đạt, KHÔNG copy nội dung của ví dụ đó sang tính năng khác.
+   - Nếu có sẵn ví dụ tham khảo trong repo (như `app/templates/`, `app/app.py`,
+     `db/schema.sql` của `examples/shop-order/`), dùng làm mẫu về mức độ chi
+     tiết cần đạt, KHÔNG copy nội dung của ví dụ đó sang tính năng khác.
 
 3. **Liệt kê Factor**: mỗi input/control/tham số ảnh hưởng tới kết quả là 1
    Factor. Với mỗi Factor, liệt kê **Levels**:

@@ -18,25 +18,16 @@ Khi sửa repo này, phân biệt rõ 2 ngữ cảnh đường dẫn:
 ## Lệnh thường dùng
 
 ```bash
-.venv/bin/pytest tests -q                    # 31 unit test cho 2 script sinh testcase
+.venv/bin/pytest tests -q                    # 32 unit test cho 2 script sinh testcase
 .venv/bin/pytest tests/test_pict_to_xlsx.py::test_ten_test -q   # chạy 1 test
 .venv/bin/python scripts/validate_skills.py            # lint frontmatter + file tham chiếu của mọi SKILL.md
 ```
 
-Kiểm tra ví dụ chưa bị drift (giống hệt CI, chạy trong `examples/cafe-checkout/`):
-
-```bash
-../../.venv/bin/python ../../skills/autotest-testcase-pairwise/scripts/pict_to_xlsx.py \
-  checkout.model.txt --gherkin-template checkout.gherkin-template.txt \
-  --factor checkout.factor.md -o testcase-pairwise.xlsx --check
-
-../../.venv/bin/python ../../skills/autotest-gen-test/scripts/xlsx_to_feature.py \
-  testcase-pairwise.xlsx --gherkin-template checkout.gherkin-template.txt \
-  --feature-name "Chọn đồ uống và thanh toán tại quán cà phê" \
-  --scenario-title "Thêm đồ uống theo tuỳ chọn và thanh toán ra đúng tổng tiền" \
-  --background checkout.background.txt --then-steps checkout.then-steps.txt \
-  --check checkout.feature
-```
+Repo không còn giữ 1 artifact cố định để `--check` (đã bỏ `examples/cafe-checkout/` —
+xem mục "`examples/shop-order/`" bên dưới): 32 unit test ở trên là nơi duy nhất kiểm
+thử 2 script `pict_to_xlsx.py`/`xlsx_to_feature.py`. Muốn tự tay thử `--check`, chạy
+`autotest-testcase-pairwise` + `autotest-gen-test` lên `examples/shop-order/` (sinh
+`testing/` tại đó, bị gitignore) rồi chạy lại đúng 2 lệnh đó lần nữa với `--check`.
 
 Máy này **không có `python` trên PATH** — dùng `.venv/bin/python` (hoặc `python3`).
 
@@ -112,24 +103,18 @@ Khi sửa nội dung skill, giữ các ràng buộc sau — chúng là lý do b�
 - Mọi đường dẫn trong backtick dạng `references/…`, `scripts/…`, `assets/…` phải tồn tại —
   trừ khi skill không có thư mục top-level đó (khi ấy hiểu là đường dẫn của project đích).
 
-## `examples/`
-
-### `cafe-checkout/`
-
-Artifact thật đã validate của toàn bộ pipeline, dùng làm regression fixture cho CI. Sửa script
-mà đổi output là làm CI đỏ ở bước `--check` — khi đó phải regenerate ví dụ và review kỹ diff,
-đừng sửa tay file trong đó.
-
-### `shop-order/`
+## `examples/shop-order/`
 
 App demo **chạy được** (Flask + SQLite, `.venv` riêng, `pip install -r requirements.txt`)
 — dùng làm đối tượng để thử bộ skill từ bước 1. **Chỉ app được commit**: artifact của
 pipeline (`testing/`, `reports/`, `pytest.ini`) nằm trong `examples/shop-order/.gitignore`
-vì sinh lại được bằng 4 skill — đừng bỏ ignore để commit chúng. Luồng: danh sách → chi tiết → giỏ hàng (session) → `/checkout` →
-`/order/<mã>`. Mọi phần tử UI có `data-testid`, mọi số tiền có `data-value` thô,
-`db/seed_data.py` reset DB về trạng thái sạch, `GET /api/cart` + `/api/orders/<code>` đọc
-state dạng JSON. Business rule nằm ở `app/pricing.py` (công thức tiền), `app/cart.py`
-(quy tắc giỏ) và `app/app.py` (validate form) — chi tiết trong README của nó.
+vì sinh lại được bằng 4 skill — đừng bỏ ignore để commit chúng.
+
+Luồng: danh sách → chi tiết → giỏ hàng (session) → `/checkout` → `/order/<mã>`. Mọi
+phần tử UI có `data-testid`, mọi số tiền có `data-value` thô, `db/seed_data.py` reset DB
+về trạng thái sạch, `GET /api/cart` + `/api/orders/<code>` đọc state dạng JSON. Business
+rule nằm ở `app/pricing.py` (công thức tiền), `app/cart.py` (quy tắc giỏ) và `app/app.py`
+(validate form) — chi tiết trong README của nó.
 
 ### `shop-order/bugs/` — lỗi cố ý cho mutation testing
 
