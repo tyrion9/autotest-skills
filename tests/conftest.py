@@ -1,4 +1,4 @@
-"""Nạp 2 script của skill như module để unit test (chúng nằm trong skills/*/scripts/)."""
+"""Nạp scripts/validate_skills.py như module để unit test."""
 
 from __future__ import annotations
 
@@ -22,11 +22,6 @@ def _load(module_name: str, relative_path: str):
     return module
 
 
-@pytest.fixture(scope="session")
-def pict_to_xlsx():
-    return _load("pict_to_xlsx", "skills/autotest-testcase-pairwise/scripts/pict_to_xlsx.py")
-
-
-@pytest.fixture(scope="session")
-def xlsx_to_feature():
-    return _load("xlsx_to_feature", "skills/autotest-gen-test/scripts/xlsx_to_feature.py")
+@pytest.fixture()
+def validate_skills():
+    return _load("validate_skills", "scripts/validate_skills.py")

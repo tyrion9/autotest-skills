@@ -1,6 +1,6 @@
 ---
 name: autotest-run-test
-description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân loại và sửa lỗi kịch bản (không tự sửa bug thật của app), hỏi người dùng khi thiếu tham số môi trường, rồi sinh báo cáo (test_summary.md, pytest-html, Allure). Hỗ trợ chế độ trình diễn cho tester: chạy có màn hình, chậm từng bước, in chi tiết từng testcase ra console và dừng chờ bấm tiếp sau mỗi testcase. Dùng khi người dùng nói "chạy test", "chạy lại bộ test và cho báo cáo", hoặc bước 4 (cuối) của autotest-pipeline.
+description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân loại và sửa lỗi kịch bản (không tự sửa bug thật của app), hỏi người dùng khi thiếu tham số môi trường, rồi sinh báo cáo (test_summary.md, pytest-html, Allure). Hỗ trợ chế độ trình diễn cho tester: chạy có màn hình, chậm từng bước, in chi tiết từng testcase ra console và dừng chờ bấm tiếp sau mỗi testcase. Dùng khi người dùng nói "chạy test", "chạy lại bộ test và cho báo cáo", hoặc sau khi đã có code test từ skill autotest-gen-test.
 ---
 
 # Autotest: Run Test (chạy, tự sửa/hỏi tham số, gen báo cáo)

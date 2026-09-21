@@ -2,59 +2,51 @@
 
 [![CI](https://github.com/tyrion9/autotest-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/tyrion9/autotest-skills/actions/workflows/ci.yml)
 
-Bộ 5 [Claude Code Skill](https://docs.claude.com/en/docs/claude-code/skills)
-biến quy trình kiểm thử **requirement → pairwise → code test → chạy + báo
-cáo** thành các bước lặp lại được, dùng cho bất kỳ màn hình/API nào — không
-gắn cứng vào 1 app cụ thể.
+Bộ 2 [Claude Code Skill](https://docs.claude.com/en/docs/claude-code/skills)
+biến quy trình kiểm thử **(prompt / file testcase / .feature có sẵn) → code
+test → chạy + báo cáo** thành các bước lặp lại được, dùng cho bất kỳ màn
+hình/API nào — không gắn cứng vào 1 app cụ thể.
 
 ```
-Requirement / mô tả màn hình / mã nguồn thật
-        │  autotest-factor-analysis
-        ▼
-factor.md            (Factor & Levels, Constraints, Case biên, câu hỏi mở)
-        │  autotest-testcase-pairwise   (dùng pict-cli qua skill design-pairwise-tests)
-        ▼
-testcase-pairwise.xlsx   (MatrixID, factor..., Loại, Gherkin, Kết quả mong đợi)
-        │  autotest-gen-test
-        ▼
-.feature + step definitions Python (đã pytest --collect-only + chạy thử OK)
-        │  autotest-run-test
-        ▼
-Kết quả test + report.html + allure-report/ + test_summary.md
+Prompt mô tả nghiệp vụ  ─┐
+File testcase có sẵn     ├──  autotest-gen-test  ──> .feature + step definitions
+File .feature có sẵn    ─┘    (tự verify: collect     Python (pytest-bdd + Playwright),
+                               + chạy thật + mutation   đã chạy thử OK
+                               check)
+                                        │
+                                        ▼
+                               autotest-run-test
+                                        │
+                                        ▼
+                    Kết quả test + report.html + allure-report/ + test_summary.md
 ```
 
-Triết lý: **AI chỉ làm phần cần phán đoán ngôn ngữ/nghiệp vụ (đọc requirement
-ra factor, đặt tên, viết 1 template Gherkin)**; mọi phép **tính tổ hợp**
-(pairwise) và **ghép chuỗi dữ liệu → Gherkin/Excel** đều giao cho script xác
-định (`pict-cli`, 2 script Python trong repo này) — không để AI tự bịa dòng
-testcase nào.
+Triết lý: `autotest-gen-test` nhận đúng nguồn người dùng đang có — không bắt
+buộc phải đi qua 1 bước sinh ma trận riêng trước — nhưng vẫn giữ kỷ luật chất
+lượng bất kể nguồn nào: ID case ổn định để truy vết report, oracle độc lập
+với code app, và **tự verify bằng chạy thật + mutation check** trước khi báo
+xong, không giao code test chưa kiểm chứng.
 
-## 5 skill
+## 2 skill
 
 | Skill | Input → Output |
 |---|---|
-| `autotest-pipeline` | Điều phối 4 bước dưới, quy định rõ điểm nào phải dừng hỏi người dùng thay vì tự đoán |
-| `autotest-factor-analysis` | Requirement + code thật → `factor.md` |
-| `autotest-testcase-pairwise` | `factor.md` → `testcase-pairwise.xlsx` (script `pict_to_xlsx.py`) |
-| `autotest-gen-test` | `testcase-pairwise.xlsx` → `.feature` + step defs, **tự verify** trước khi báo xong (script `xlsx_to_feature.py`) |
+| `autotest-gen-test` | Prompt mô tả nghiệp vụ **hoặc** file testcase có sẵn (xlsx/csv/markdown/text) **hoặc** file `.feature` có sẵn → `.feature` + step defs, **tự verify** (collect + chạy thật + mutation check) trước khi báo xong |
 | `autotest-run-test` | Chạy test, phân loại bug thật (không tự sửa app) / lỗi kịch bản (tự sửa) / flaky, sinh báo cáo. Có **chế độ trình diễn** `--demo`: trình duyệt hiện hình, chậm từng bước, in chi tiết từng testcase, dừng chờ tester bấm tiếp |
 
-Xem chi tiết từng bước trong `skills/<tên-skill>/SKILL.md`.
+Xem chi tiết từng skill trong `skills/<tên-skill>/SKILL.md`.
 
 ## Đặc tính production
 
 | Vấn đề thường gặp khi tự động sinh test | Cách bộ skill này xử lý |
 |---|---|
-| ID testcase xô lệch mỗi lần regenerate → bug report cũ trỏ sai | `MatrixID` **hash theo nội dung tổ hợp** (`TC-xxxxxx`): cùng 1 tổ hợp luôn cùng 1 ID, kể cả khi đổi vị trí dòng |
-| File Excel/`.feature` bị sửa tay rồi lệch khỏi nguồn | Cả 2 script có `--check` → exit 1 khi lệch, gắn vào CI là chặn được |
-| Không biết file testcase cũ sinh ra từ đâu | Sheet `meta` trong xlsx ghi model/seed/order/hash/thống kê pict |
-| Sai tên factor trong template → dữ liệu hỏng âm thầm | Placeholder lạ → **báo lỗi dừng hẳn** (có `--allow-unknown-placeholders` khi thật sự cần) |
-| Bảng "case biên" viết khác tên cột → mất case mà không ai biết | Nhận nhiều biến thể tên cột, không khớp thì **báo lỗi**, không im lặng trả rỗng |
-| Giá trị chứa `\|` hoặc xuống dòng làm vỡ bảng Gherkin | Tự escape khi sinh Examples |
+| ID testcase xô lệch khi thêm case mới → bug report cũ trỏ sai | Mỗi Scenario/hàng Examples có ID ổn định (`[TC-xxx]`/`[BC-xxx]`); case cũ giữ nguyên ID khi thêm case mới |
+| Test xanh mà không thật sự kiểm tra được gì | Bắt buộc mutation check: tiêm lỗi vào app, xác nhận test FAIL, gỡ lỗi ngay sau đó |
+| Oracle tự khớp chính app (app sai kiểu gì test cũng pass) | Cấm `import` hàm tính toán của app làm kỳ vọng — bắt đọc dữ liệu thô rồi tự viết lại công thức |
+| Nguồn testcase có sẵn bị AI tự "biên tập" (thêm/bớt/đổi case) | SKILL.md quy định rõ: file testcase là nguồn chân lý, không tự thêm/bớt case |
 | Flaky bị "chạy lại cho tới khi pass" | Hỗ trợ `pytest-rerunfailures`; case pass-sau-rerun bị đánh dấu **nghi flaky** trong báo cáo |
 | Mỗi project tự viết lại hook báo cáo | Plugin dùng chung `autotest_reporting.py` (test_summary.md + Allure environment) |
-| Tester không tin bộ test vì chỉ thấy dòng `29 passed` | Plugin `autotest_demo.py`: `--demo` chạy có màn hình, chậm lại, in MatrixID + dữ liệu + từng step Gherkin, dừng chờ bấm Enter từng testcase |
-| Bản thân công cụ không được kiểm thử | 32 unit test cho 2 script sinh testcase, chạy trên Node 22 & 24 |
+| Tester không tin bộ test vì chỉ thấy dòng `29 passed` | Plugin `autotest_demo.py`: `--demo` chạy có màn hình, chậm lại, in ID case + dữ liệu + từng step Gherkin, dừng chờ bấm Enter từng testcase |
 | Không biết bộ skill có thật sự bắt được bug hay không | `examples/shop-order/` có 6 lỗi nghiệp vụ gieo sẵn, bật/tắt được, để tự đo trước khi tin dùng — xem mục "Ví dụ: shop-order" bên dưới |
 
 ## Cài đặt
@@ -69,55 +61,47 @@ npx skills add tyrion9/autotest-skills
 # vào ~/.claude/skills/, mỗi skill 1 thư mục con.
 ```
 
-**Phụ thuộc bắt buộc**: `autotest-testcase-pairwise` dùng lại
-[`takeyaqa/tester-skills`](https://github.com/takeyaqa/tester-skills)
-(skill `design-pairwise-tests`, bọc `pict-cli` — thuật toán PICT gốc của
-Microsoft) để sinh tổ hợp pairwise xác định. Cài thêm:
-```bash
-gh skill install takeyaqa/tester-skills
-```
-
 **Yêu cầu hệ thống** (cho project sẽ được test, không phải cho bản thân bộ
 skill):
-- **Node.js 22 hoặc 24** — `pict-cli@0.2` khai `engines: ^22 || ^24`. Node
-  18/20 (mặc định trên nhiều CI runner) hoặc bản quá mới có thể không chạy
-  được; CI của repo này test trên cả 22 và 24.
-- Python 3.10+, `openpyxl` (2 script sinh/đọc `.xlsx`)
-- `pytest`, `pytest-bdd`, `playwright` (Python) — engine chạy test thật
-- Khuyến nghị `pytest-rerunfailures` — xử lý flaky ở tầng CI thay vì chạy lại tay
+- Python 3.10+, `pytest`, `pytest-bdd`, `playwright` (Python) — engine chạy
+  test thật
+- Khuyến nghị `pytest-rerunfailures` — xử lý flaky ở tầng CI thay vì chạy lại
+  tay
 - (Tuỳ chọn) [Allure Commandline](https://allurereport.org/docs/install/) để
   xem báo cáo HTML chi tiết (request/response, ảnh chụp màn hình, tham số
   theo scenario)
+- Nếu nguồn đầu vào là file testcase `.xlsx`: `openpyxl` (chỉ cần khi tự mở
+  file để đối chiếu bằng tay; `autotest-gen-test` tự đọc nội dung file, không
+  gọi thư viện ngoài nào của repo này)
 
 ## Phát triển / kiểm thử chính bộ skill
 
 ```bash
-pip install pytest openpyxl
-pytest tests -q                  # 32 unit test cho 2 script sinh testcase
+pip install pytest
+pytest tests -q                   # unit test cho scripts/validate_skills.py
 python scripts/validate_skills.py # kiểm tra frontmatter + file tham chiếu của mọi SKILL.md
 ```
-CI (`.github/workflows/ci.yml`) chạy 2 lệnh trên, trên cả Node 22 và 24.
+CI (`.github/workflows/ci.yml`) chạy 2 lệnh trên.
 
 ## Cách dùng — prompt từng bước
 
 Xem **[`PROMPTS.md`](./PROMPTS.md)**: prompt mẫu (kèm bản đã điền theo ví dụ
-`examples/shop-order`) cho từng bước 1→4, cách kiểm tra kết quả sau mỗi bước,
-prompt gộp dùng `autotest-pipeline`, cách chạy lại 1 phần khi tính năng đổi
-nhỏ, và **hướng dẫn riêng để săn 6 lỗi cố ý trong shop-order rồi báo cáo**.
+`examples/shop-order`) cho từng nguồn đầu vào của `autotest-gen-test`, cách
+kiểm tra kết quả trước khi chạy `autotest-run-test`, cách chạy lại 1 phần khi
+tính năng đổi nhỏ, và **hướng dẫn riêng để săn 6 lỗi cố ý trong shop-order
+rồi báo cáo**.
 
 ## Ví dụ: `examples/shop-order/`
 
 App demo **chạy được** (Flask + SQLite) — xem hàng hoá theo category, giỏ
 hàng, màn hình đặt hàng riêng, lưu đơn + thông tin liên hệ. Dùng làm đối
-tượng để tự chạy lại cả 4 bước từ đầu. **Chỉ app được commit** — artifact
-pipeline (`testing/`, `reports/`) bị ignore vì sinh lại được bằng skill.
+tượng để tự chạy lại cả 2 bước từ đầu. **Chỉ app được commit** — artifact
+sinh test (`testing/`, `reports/`) bị ignore vì sinh lại được bằng skill.
 
 Kèm `bugs/bugs.py`: bật/tắt **6 lỗi nghiệp vụ gieo sẵn** (mặc định tắt, app
 chạy đúng) để tự đo bộ test sinh ra có "răng" hay không — mutation testing.
-Lần chạy tham chiếu: 5 factor → 14 dòng pairwise + 10 case biên = 24
-scenario; app đúng cho **24/24 PASS**, bật cả 6 lỗi thì **10 FAIL** — bắt đủ
-cả 6. Xem mô tả app + lỗi cố ý trong `examples/shop-order/README.md`, và
-prompt từng bước để tự săn bug trong `PROMPTS.md`.
+Xem mô tả app + lỗi cố ý trong `examples/shop-order/README.md`, và prompt
+từng bước để tự săn bug trong `PROMPTS.md`.
 
 ## Playwright: MCP vs thư viện Python
 

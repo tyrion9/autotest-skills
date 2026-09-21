@@ -3,7 +3,7 @@
 > ⛔ **Đừng đọc file này — và đừng để skill đọc thư mục `bugs/`** — trước khi
 > đã sinh xong bộ test. Đây là đáp án; đọc trước là tự làm hỏng phép thử.
 >
-> Khi chạy `autotest-factor-analysis`, hãy chỉ rõ nguồn requirement là
+> Khi chạy `autotest-gen-test`, hãy chỉ rõ nguồn requirement là
 > `examples/shop-order/README.md` (mục "Quy tắc nghiệp vụ") — **README luôn mô
 > tả hành vi ĐÚNG**, kể cả khi code đang bị chèn lỗi.
 

@@ -43,7 +43,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-# MatrixID ở đầu tên scenario: "[TC-A1B2C3] ..." (do xlsx_to_feature.py sinh).
+# ID case ở đầu tên scenario: "[TC-A1B2C3] ..." (do autotest-gen-test đặt).
 # Pattern siết chặt (2-4 chữ cái + "-" + mã) để KHÔNG nhận nhầm id parametrize
 # của pytest, vốn cũng nằm trong ngoặc vuông: "test_x[CaPheDen-M-2]".
 _MATRIX_ID_RE = re.compile(r"\[([A-Za-z]{2,4}-[0-9A-Za-z]{4,})\]")
@@ -153,7 +153,7 @@ def _fill(text: str, params: dict) -> str:
 
 
 def _resolve_matrix_id(item, scenario, params: dict) -> str:
-    """Ưu tiên cột MatrixID của Examples — feature do pipeline sinh đặt tiêu đề
+    """Ưu tiên cột MatrixID của Examples — autotest-gen-test đặt tiêu đề
     scenario là "[<MatrixID>]", nên tên scenario chưa thay giá trị thật."""
     for key in ("MatrixID", "matrix_id", "Matrix_ID"):
         if params.get(key):

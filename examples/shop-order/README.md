@@ -57,7 +57,7 @@ biến môi trường `SHOP_DB=/đường/dẫn/khác.sqlite3`.
 | `db/schema.sql` | `categories`, `products`, `orders`, `order_items` + ràng buộc CHECK |
 | `db/seed_data.py` | Dữ liệu cố định, không random |
 
-## Quy tắc nghiệp vụ (nguồn cho bước factor-analysis)
+## Quy tắc nghiệp vụ (nguồn requirement cho autotest-gen-test)
 
 **Tính tiền** (`app/pricing.py`) — giỏ hàng nhiều dòng:
 
@@ -128,10 +128,10 @@ oracle trong skill `autotest-gen-test`.
 
 ## Bộ test E2E — sinh bằng autotest-skills, KHÔNG commit
 
-Repo này chỉ chứa **app**. Toàn bộ artifact của pipeline kiểm thử
-(`testing/`, `reports/`, `pytest.ini`) nằm trong `.gitignore` vì chúng sinh
-lại được bất cứ lúc nào — đó cũng chính là điều đang muốn chứng minh: cùng 1
-requirement thì chạy lại 4 skill phải ra cùng 1 bộ test.
+Repo này chỉ chứa **app**. Toàn bộ artifact kiểm thử (`testing/`, `reports/`,
+`pytest.ini`) nằm trong `.gitignore` vì chúng sinh lại được bất cứ lúc nào —
+đó cũng chính là điều đang muốn chứng minh: cùng 1 requirement thì chạy lại
+`autotest-gen-test` phải ra cùng 1 bộ test.
 
 Sinh lại từ đầu:
 
@@ -141,12 +141,13 @@ Sinh lại từ đầu:
 cd app && ../.venv/bin/python app.py &      # app phải đang chạy
 ```
 
-rồi chạy 4 skill theo thứ tự (xem `PROMPTS.md` ở gốc repo):
-`autotest-factor-analysis` → `autotest-testcase-pairwise` → `autotest-gen-test`
-→ `autotest-run-test`. Requirement lấy từ mục "Quy tắc nghiệp vụ" bên trên.
+rồi dùng `autotest-gen-test` (nguồn = prompt, xem `PROMPTS.md` ở gốc repo,
+mục Prompt 1a) để viết `.feature` + step definitions, sau đó
+`autotest-run-test` để chạy. Requirement lấy từ mục "Quy tắc nghiệp vụ" bên
+trên.
 
-Lần chạy tham chiếu đã thực hiện: 5 factor (CartPreset × Region ×
-PaymentMethod × Email × CoGhiChu) → 14 dòng pairwise + 10 case biên = 24
+Lần chạy tham chiếu đã thực hiện: 5 biến đầu vào (CartPreset × Region ×
+PaymentMethod × Email × CoGhiChu) → 14 scenario tổ hợp + 10 case biên = 24
 scenario, app đúng cho **24/24 PASS**.
 
 Chạy trình diễn để xem bằng mắt: `pytest testing --demo` (Enter = case tiếp
