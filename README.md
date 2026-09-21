@@ -45,7 +45,10 @@ Xem chi tiết từng skill trong `skills/<tên-skill>/SKILL.md`.
 | Oracle tự khớp chính app (app sai kiểu gì test cũng pass) | Cấm `import` hàm tính toán của app làm kỳ vọng — bắt đọc dữ liệu thô rồi tự viết lại công thức |
 | Nguồn testcase có sẵn bị AI tự "biên tập" (thêm/bớt/đổi case) | SKILL.md quy định rõ: file testcase là nguồn chân lý, không tự thêm/bớt case |
 | Flaky bị "chạy lại cho tới khi pass" | Hỗ trợ `pytest-rerunfailures`; case pass-sau-rerun bị đánh dấu **nghi flaky** trong báo cáo |
-| Mỗi project tự viết lại hook báo cáo | Plugin dùng chung `autotest_reporting.py` (test_summary.md + Allure environment) |
+| Known bug đã báo cáo bị lẫn vào Fail mới, gây báo động giả mỗi lần chạy | Case đánh dấu `@pytest.mark.xfail(reason=...)` (chỉ khi PO xác nhận là bug đã biết) được tách riêng cột "Known bug (xfail)" trong `test_summary.md`, không cộng vào Fail; xfail bất ngờ PASS được báo để gỡ tag |
+| Mỗi project tự viết lại hook báo cáo | Plugin dùng chung `autotest_reporting.py` (test_summary.md + Allure environment); **Allure là báo cáo mặc định**, tự đính ảnh chụp màn hình PASS/FAIL (UI), lịch sử mọi lời gọi HTTP (URL + mã response) và curl+response thật (API) làm bằng chứng truy vết cho từng scenario |
+| Báo cáo lộ thông tin nhạy cảm (API key, password, token...) | `autotest_reporting.py` tự che (`***`) mọi header/field/query-param có tên khớp `key`/`password`/`secret`/`token`/`authorization`/`cookie` trước khi đính vào Allure — cả URL, header, và body JSON lồng nhau |
+| URL/path/số điện thoại/data test hard-code thẳng trong step, đổi môi trường phải sửa code | Plugin `autotest_env.py`: biến global (`testing/env/global.yaml`) + biến local theo feature (`testing/env/local/<feature>.yaml`), mỗi file có mục riêng cho UAT/PROD, chọn qua `--test-env` — file YAML tester sửa tay được, không đụng code test |
 | Tester không tin bộ test vì chỉ thấy dòng `29 passed` | Plugin `autotest_demo.py`: `--demo` chạy có màn hình, chậm lại, in ID case + dữ liệu + từng step Gherkin, dừng chờ bấm Enter từng testcase |
 | Không biết bộ skill có thật sự bắt được bug hay không | `examples/shop-order/` có 6 lỗi nghiệp vụ gieo sẵn, bật/tắt được, để tự đo trước khi tin dùng — xem mục "Ví dụ: shop-order" bên dưới |
 
@@ -65,11 +68,18 @@ npx skills add tyrion9/autotest-skills
 skill):
 - Python 3.10+, `pytest`, `pytest-bdd`, `playwright` (Python) — engine chạy
   test thật
+- `allure-pytest-bdd` (**bắt buộc** — Allure là báo cáo mặc định của bộ
+  skill, không phải phần tuỳ chọn; thiếu package này thì mất bằng chứng ảnh
+  chụp màn hình + curl/response trong báo cáo)
+- `pyyaml` (**bắt buộc** — plugin `autotest_env.py` đọc file biến môi trường
+  `testing/env/*.yaml`; thiếu package này thì mọi test dừng ngay lúc nạp
+  conftest, không chạy được)
 - Khuyến nghị `pytest-rerunfailures` — xử lý flaky ở tầng CI thay vì chạy lại
   tay
-- (Tuỳ chọn) [Allure Commandline](https://allurereport.org/docs/install/) để
-  xem báo cáo HTML chi tiết (request/response, ảnh chụp màn hình, tham số
-  theo scenario)
+- (Tuỳ chọn) [Allure Commandline](https://allurereport.org/docs/install/) chỉ
+  cần khi muốn build sẵn báo cáo HTML tĩnh (`allure generate`) tại máy này —
+  không có CLI thì vẫn có `reports/allure-results/` (mở bằng `allure serve`
+  hoặc build ở máy khác)
 - Nếu nguồn đầu vào là file testcase `.xlsx`: `openpyxl` (chỉ cần khi tự mở
   file để đối chiếu bằng tay; `autotest-gen-test` tự đọc nội dung file, không
   gọi thư viện ngoài nào của repo này)

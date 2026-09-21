@@ -1,6 +1,6 @@
 ---
 name: autotest-gen-test
-description: Sinh code test Python (Gherkin .feature + pytest-bdd step definitions dùng Playwright) từ 1 trong 3 nguồn — prompt mô tả nghiệp vụ của người dùng, 1 file testcase có sẵn (xlsx/csv/markdown/text), hoặc 1 file .feature đã viết sẵn — và TỰ VERIFY (collect + chạy thử + mutation check) trước khi báo hoàn thành. Dùng khi người dùng nói "viết test cho tính năng...", "sinh test từ file testcase này", "viết step definitions cho file .feature này", hoặc bất cứ khi nào cần code test E2E chạy được ngay từ 1 trong 3 nguồn trên.
+description: Sinh code test Python (Gherkin .feature + pytest-bdd step definitions dùng Playwright) từ 1 trong 3 nguồn — prompt mô tả nghiệp vụ của người dùng, 1 file testcase có sẵn (xlsx/csv/markdown/text), hoặc 1 file .feature đã viết sẵn. Nếu app đích chạy được, ưu tiên rà soát trang thật bằng skill/extension `claude-in-chrome` (đi qua luồng, kiểm tra data-testid, xem network/console thật) TRƯỚC KHI viết code, rồi TỰ VERIFY (collect + chạy thử + mutation check) trước khi báo hoàn thành. Biến/tham số phụ thuộc môi trường (URL, path, số điện thoại, data test) đọc qua plugin `autotest_env` — tách biến global (dùng chung mọi feature) và biến local (riêng 1 feature), theo môi trường UAT/PROD, ghi trong file YAML tester sửa tay được — không hard-code trong step. Dùng khi người dùng nói "viết test cho tính năng...", "sinh test từ file testcase này", "viết step definitions cho file .feature này", hoặc bất cứ khi nào cần code test E2E chạy được ngay từ 1 trong 3 nguồn trên.
 ---
 
 # Autotest: Gen Test (prompt / file testcase / .feature có sẵn → code test, tự verify)
@@ -26,6 +26,33 @@ khi ảnh hưởng tới toàn bộ cách làm việc bên dưới):
 Cả 3 nguồn đều dẫn tới cùng 1 bộ bước 2-5 bên dưới; khác nhau ở bước 1.
 
 ## Các bước
+
+### 0. Rà soát trang web thật bằng Claude in Chrome (ưu tiên, làm trước bước 1)
+
+Nếu app đích đang chạy được (có URL truy cập được, kể cả localhost) thì **ưu
+tiên dùng skill `claude-in-chrome` mở trình duyệt thật và tự tay đi qua luồng
+liên quan** trước khi đọc mã nguồn hoặc viết bất kỳ dòng Gherkin/step nào:
+- Điều hướng qua đúng luồng được mô tả (từ prompt/file testcase/`.feature`)
+  trên UI thật: bấm, điền form, submit, xem kết quả — không chỉ đọc code rồi
+  suy diễn hành vi.
+- Dùng `read_page`/`get_page_text`/`find` để xác nhận `data-testid` thật có
+  tồn tại trên đúng phần tử cần thao tác (dùng lại ở bước 3) — không đoán
+  selector từ tên biến trong code khi chưa thấy DOM thật.
+- Dùng `read_network_requests`/`read_console_messages` khi cần thấy
+  request/response thật (field trả về, mã lỗi validate thật) — đỡ phải đoán
+  từ đọc handler.
+- Việc rà soát này giúp thiết kế case biên/negative đúng với hành vi UI thật
+  (thông báo lỗi hiển thị thế nào, field nào bị disable khi nào...) thay vì
+  chỉ suy từ đọc mã nguồn.
+
+Nếu app **không chạy được / không có URL truy cập được** (chỉ có mã nguồn
+tĩnh), nêu rõ điều này với người dùng rồi làm theo cách cũ ở bước 1: đọc mã
+nguồn thật — không tự bịa hành vi UI khi chưa xác nhận được bằng trình duyệt
+thật lẫn source.
+
+Rà soát ở bước này **không thay thế** verify bắt buộc ở bước 4 (chạy test
+thật bằng Playwright) — bước 0 là để hiểu đúng UI/luồng trước khi viết code,
+bước 4 là verify chính code test đã viết ra chạy đúng.
 
 ### 1. Dựng/đọc nội dung Gherkin theo đúng nguồn
 
@@ -65,7 +92,8 @@ Cả 3 nguồn đều dẫn tới cùng 1 bộ bước 2-5 bên dưới; khác n
 ### 3. Viết step mới (nếu cần) theo convention đã dùng trong project
 - Dùng `data-testid` ổn định trên UI (không dùng text hiển thị làm selector
   nếu UI đã có `data-testid`; nếu UI CHƯA có `data-testid` cho phần tử cần
-  thao tác, báo cho người dùng — không tự đoán selector CSS mong manh).
+  thao tác — đã xác nhận qua rà soát thật ở bước 0, không chỉ đọc code — báo
+  cho người dùng, không tự đoán selector CSS mong manh).
 - **Fixture `browser` phải nhận tham số chế độ trình diễn ngay từ đầu**, để
   bước `autotest-run-test` chạy được `pytest --demo` (có màn hình, chậm, dừng
   từng testcase) mà không phải sửa lại conftest:
@@ -82,6 +110,50 @@ Cả 3 nguồn đều dẫn tới cùng 1 bộ bước 2-5 bên dưới; khác n
   ```
   Mặc định (không có cờ `--demo`) `demo_mode.headed=False`, `slow_mo=0` → vẫn
   chạy headless, nhanh, hợp CI.
+- **Biến & tham số môi trường (UAT/PROD) — không hard-code URL/path/số điện
+  thoại/data test thẳng trong step.** Plugin dùng chung `autotest_env.py`
+  (asset của `autotest-run-test`, copy như `autotest_reporting`/`autotest_demo`)
+  tách 2 loại biến, cả 2 đều có sẵn cho môi trường `uat` và `prod`:
+  - **Biến global** (`testing/env/global.yaml`) — dùng chung mọi feature, vd
+    `base_url`, `api_url`. Đọc bằng `autotest_env.global_vars()["base_url"]`.
+  - **Biến local** (`testing/env/local/<feature>.yaml`, tên file khớp tên
+    feature) — riêng cho feature đang viết: path, số điện thoại/tài khoản
+    cần tra cứu, data test cụ thể... Đọc bằng
+    `autotest_env.local_vars("<feature>")["phone_number"]`.
+  ```python
+  from autotest_env import global_vars, local_vars
+  base_url = global_vars()["base_url"]
+  phone = local_vars("tra_cuu_don_hang")["phone_number"]
+  ```
+  **Lần đầu viết 1 feature còn thiếu file biến** → tạo file theo mẫu
+  `env.global.example.yaml`/`env.local.example.yaml` (asset của
+  `autotest-run-test`), rồi **hỏi người dùng giá trị THẬT cho cả UAT và
+  PROD** (URL, số điện thoại, path...) — không tự bịa, vì 2 môi trường
+  thường có data khác nhau và bịa sai sẽ khiến test PROD vô tình chạy nhầm
+  data UAT hoặc ngược lại.
+- **Bằng chứng + lịch sử truy vết cho Allure (bắt buộc, `autotest-run-test`
+  chạy xong sẽ kiểm lại phần này)**:
+  - Scenario UI: mọi step dùng chung 1 fixture **đặt tên đúng là `page`**
+    (function-scope, `browser.new_page()`) — plugin `autotest_reporting` tự
+    nhận diện đúng tên này để: (a) tự chụp và đính ảnh màn hình PASS/FAIL vào
+    Allure, (b) tự ghi lại **lịch sử mọi lời gọi HTTP** (`document`/`xhr`/
+    `fetch`: method, URL, mã response) phát sinh trong lúc chạy thành 1
+    attachment `HTTP calls (network log)` — không cần step tự gọi gì thêm.
+    Đặt tên fixture khác `page` thì mất cả 2 phần tự động này.
+  - Scenario API: step thực hiện request thật (`requests`/Playwright
+    `APIRequestContext`...) phải gọi ngay
+    `autotest_reporting.attach_api_call(method, url, request_headers=...,
+    request_body=..., status=..., response_headers=..., response_body=...)`
+    ngay sau khi có response, để đính kèm curl tái hiện request + response
+    thật vào Allure — không tự bịa lại request/response từ code app.
+  - **Không tự che/lọc thông tin nhạy cảm trong step** — plugin
+    `autotest_reporting` đã tự che `x-api-key`/`password`/`secret`/`token`/
+    `authorization`/`cookie` (không phân biệt hoa/thường, cả trong URL,
+    header, body lồng nhau) trước khi ghi vào Allure. Nếu project có field
+    nhạy cảm với tên khác không khớp danh sách trên, phải báo cho người dùng
+    để cập nhật `_SENSITIVE_KEY_RE` trong bản copy `autotest_reporting.py`
+    của project đó — không tự ý truyền dữ liệu nhạy cảm ra ngoài phạm vi che
+    này (vd không tự in ra console/log riêng để "debug").
 - **Viết docstring 1 dòng cho step/scenario khi có thể** — chế độ trình diễn
   in docstring này ra console làm phần "Mô tả" của testcase.
 - **Oracle (giá trị kỳ vọng) PHẢI ĐỘC LẬP với code của app.** Đây là quy tắc
@@ -128,6 +200,9 @@ Lỗi hay gặp khi viết step Playwright: `wait_for_selector` mặc định ch
 không sẽ treo tới hết timeout (30s) rồi báo lỗi khó hiểu.
 
 ## Definition of done
+- Nếu app đích chạy được: đã rà soát trang thật bằng `claude-in-chrome` (bước
+  0) trước khi thiết kế case/viết step — nếu bỏ qua vì app không chạy được,
+  đã nói rõ lý do với người dùng thay vì im lặng bỏ qua.
 - `pytest --collect-only` sạch, số test khớp số case đã thiết kế/đã có trong
   nguồn đầu vào (không thiếu, không tự bịa thêm case ngoài nguồn — riêng
   nguồn = Prompt thì AI được chủ động chọn case, miễn có ghi rõ lý do).
@@ -141,6 +216,17 @@ không sẽ treo tới hết timeout (30s) rồi báo lỗi khó hiểu.
   nguyên ID khi thêm case mới.
 - Fixture `browser` đã nhận `demo_mode` (sẵn sàng cho `pytest --demo` ở bước
   chạy test), và mặc định không có cờ thì vẫn headless/nhanh.
+- Bằng chứng Allure đã được nối đúng convention: scenario UI dùng fixture tên
+  `page` (có cả ảnh chụp màn hình lẫn lịch sử `HTTP calls` tự động); scenario
+  API gọi `attach_api_call(...)` ngay sau khi có response thật — để
+  `autotest-run-test` có bằng chứng + truy vết đầy đủ, không phải báo cáo
+  trống bằng chứng.
+- Không hard-code URL/path/số điện thoại/data test phụ thuộc môi trường
+  thẳng trong step — đọc qua `autotest_env.global_vars()`/`local_vars(...)`.
+  Feature mới có data riêng đã có `testing/env/local/<feature>.yaml` với giá
+  trị THẬT cho cả `uat` và `prod` (không phải placeholder từ file mẫu), trừ
+  khi đã hỏi và người dùng chưa cung cấp — thì phải nêu rõ đang thiếu, không
+  âm thầm để giá trị mẫu.
 
 ## Khi nào KHÔNG tự quyết
 - UI thiếu `data-testid` cho phần tử cần thao tác → hỏi có nên thêm
@@ -151,3 +237,12 @@ không sẽ treo tới hết timeout (30s) rồi báo lỗi khó hiểu.
 - Nguồn = file testcase có sẵn nhưng file thiếu thông tin (cột kỳ vọng, mô tả
   case mơ hồ) → hỏi người dùng cách hiểu đúng, không tự suy diễn rồi âm thầm
   bỏ case hoặc gộp sai case.
+- Test FAIL do app có bug thật (không phải lỗi kịch bản) → báo bug, KHÔNG tự
+  gắn `@pytest.mark.xfail` để che fail đi. Chỉ gắn `xfail` khi người dùng/PO
+  đã xác nhận rõ đây là bug đã biết, đang chờ fix ở release khác (xem quy ước
+  "Known bug (xfail)" ở `autotest-run-test`) — tự quyết định thay người dùng
+  việc nào là "known, chấp nhận được" là sai phạm vi.
+- Chưa biết giá trị THẬT của 1 biến môi trường (URL PROD, số điện thoại test,
+  path...) cho `testing/env/global.yaml`/`local/<feature>.yaml` → hỏi người
+  dùng, không tự bịa hoặc copy nguyên giá trị mẫu từ `*.example.yaml` rồi coi
+  như xong — data UAT/PROD sai sẽ làm test PROD chạy nhầm data giả.
