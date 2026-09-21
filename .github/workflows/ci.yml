@@ -9,26 +9,17 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # pict-cli@0.2 khai engines: ^22 || ^24 -> test đúng 2 dòng LTS được hỗ trợ
-        node-version: ["22", "24"]
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Cài dependencies
-        run: pip install pytest openpyxl
+        run: pip install pytest
 
-      - name: Unit test cho 2 script sinh testcase
+      - name: Unit test cho script còn lại (validate_skills.py)
         run: pytest tests -q
 
   lint-skills:

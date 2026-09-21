@@ -39,7 +39,7 @@ from pathlib import Path
 # Project có thể update dict này từ conftest.py để bổ sung thông tin môi trường.
 ENVIRONMENT: dict[str, str] = {}
 
-# MatrixID nằm ở đầu tên scenario dạng "[TC-A1B2C3] ..." (do xlsx_to_feature.py sinh).
+# MatrixID nằm ở đầu tên scenario dạng "[TC-A1B2C3] ..." (do autotest-gen-test đặt).
 _MATRIX_ID_RE = re.compile(r"^\[([A-Za-z0-9_.\-]+)\]")
 
 _start_time: dict[int, float] = {}
@@ -139,8 +139,8 @@ def _write_summary(reports_dir: Path) -> None:
         )
     lines += [
         "",
-        "> MatrixID truy vết 1-1 về dòng tương ứng trong `testcase-pairwise.xlsx` "
-        "(ID ổn định theo nội dung, không đổi khi thêm/bớt dòng khác).",
+        "> MatrixID truy vết 1-1 về case tương ứng trong `.feature` "
+        "(ID ổn định, không đổi khi thêm case khác).",
     ]
     (reports_dir / "test_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
