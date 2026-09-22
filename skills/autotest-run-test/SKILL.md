@@ -1,6 +1,6 @@
 ---
 name: autotest-run-test
-description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân loại và sửa lỗi kịch bản (không tự sửa bug thật của app), tách riêng known-bug đã đánh dấu `xfail` khỏi Fail mới (regression), chọn môi trường UAT/PROD qua `--test-env` (mặc định uat, chạy PROD phải được người dùng xác nhận rõ), hỏi người dùng khi thiếu tham số môi trường, rồi sinh báo cáo — **Allure là định dạng mặc định** (kèm test_summary.md, pytest-html), tự đính kèm bằng chứng + lịch sử truy vết vào Allure: ảnh chụp màn hình PASS/FAIL cho scenario UI, lịch sử mọi lời gọi HTTP (URL + mã response) trong scenario, curl + response thật cho scenario API — luôn CHE thông tin nhạy cảm (x-api-key, password, secret, token, cookie...) trước khi ghi. Hỗ trợ chế độ trình diễn cho tester: chạy có màn hình, chậm từng bước, in chi tiết từng testcase ra console và dừng chờ bấm tiếp sau mỗi testcase. Dùng khi người dùng nói "chạy test", "chạy lại bộ test và cho báo cáo", hoặc sau khi đã có code test từ skill autotest-gen-test.
+description: Chạy bộ test đã sinh (pytest-bdd + Playwright), tự phân loại và sửa lỗi kịch bản (không tự sửa bug thật của app), tách riêng known-bug đã đánh dấu `xfail` khỏi Fail mới (regression), chọn môi trường UAT/PROD qua `--test-env` (mặc định uat, chạy PROD phải được người dùng xác nhận rõ), hỏi người dùng khi thiếu tham số môi trường, rồi sinh báo cáo — **chỉ dùng Allure** (kèm test_summary.md; KHÔNG dùng pytest-html/report.html), tự đính kèm bằng chứng + lịch sử truy vết vào Allure: ảnh chụp màn hình PASS/FAIL cho scenario UI, lịch sử mọi lời gọi HTTP (URL + mã response) trong scenario, curl + response thật cho scenario API — luôn CHE thông tin nhạy cảm (x-api-key, password, secret, token, cookie...) trước khi ghi. Hỗ trợ chế độ trình diễn cho tester: chạy có màn hình, chậm từng bước, in chi tiết từng testcase ra console và dừng chờ bấm tiếp sau mỗi testcase. Dùng khi người dùng nói "chạy test", "chạy lại bộ test và cho báo cáo", hoặc sau khi đã có code test từ skill autotest-gen-test.
 ---
 
 # Autotest: Run Test (chạy, tự sửa/hỏi tham số, gen báo cáo)
@@ -118,11 +118,16 @@ thể đọc lại được, truy vết được về MatrixID.
    truyền — xem quy tắc chọn môi trường ở bước 1):
    ```bash
    pytest <thư mục test> --test-env=uat \
-     --html=reports/report.html --self-contained-html \
      --alluredir=reports/allure-results --clean-alluredir \
      --reruns 1 --reruns-delay 1
    allure generate reports/allure-results --output reports/allure-report --clean
    ```
+   **Chỉ dùng Allure — không dùng `pytest-html`/`--html=...`.** Trước đây có
+   thêm `report.html` song song với Allure; nay bỏ để chỉ còn 1 định dạng
+   HTML duy nhất, tránh 2 báo cáo lệch nhau (vd bằng chứng ảnh/curl chỉ có
+   trong Allure, không có trong `report.html`). Nếu project cũ còn cờ
+   `--html=...`/dependency `pytest-html` trong script chạy test, gỡ bỏ luôn
+   khi sửa tới.
    Nếu project đã có script gói sẵn các tham số này (vd `scripts/run_tests.sh`
    **của project đang test**, không phải của thư mục skill), ưu tiên dùng nó.
 
@@ -183,10 +188,10 @@ thể đọc lại được, truy vết được về MatrixID.
 ## Definition of done
 - Có kết quả chạy thật cuối cùng, mọi fail đã được phân loại rõ (không kết
   luận "chắc là do X" mà chưa xác minh bằng bằng chứng).
-- `reports/test_summary.md` + `reports/report.html` + `reports/allure-results/`
-  luôn được sinh ra (Allure là mặc định, không tuỳ chọn); thêm
-  `reports/allure-report/` (HTML build) nếu máy có Allure Commandline — không
-  có thì nêu rõ, KHÔNG coi là thiếu `allure-results`.
+- `reports/test_summary.md` + `reports/allure-results/` luôn được sinh ra
+  (Allure là báo cáo HTML duy nhất, không dùng `pytest-html`/`report.html`
+  song song); thêm `reports/allure-report/` (HTML build) nếu máy có Allure
+  Commandline — không có thì nêu rõ, KHÔNG coi là thiếu `allure-results`.
 - Bằng chứng có thật trong Allure: scenario UI có ảnh chụp màn hình
   PASS/FAIL + attachment `HTTP calls (network log)` (lịch sử URL + mã
   response, trace được đúng thứ tự đã gọi), scenario API có curl+response —

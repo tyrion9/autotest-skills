@@ -23,15 +23,18 @@ bug hay không, và cách viết báo cáo bug từ kết quả chạy test.
    ```
    Khởi động lại Claude Code sau khi cài để skill được nạp.
 3. Đảm bảo project có Python 3.10+ và cài
-   `pip install pytest pytest-bdd playwright pytest-html` +
+   `pip install pytest pytest-bdd playwright allure-pytest-bdd pyyaml` +
    `python -m playwright install chromium` trong venv của project (thêm
    `openpyxl` nếu nguồn testcase của bạn là file `.xlsx` và bạn muốn tự mở
    file đó bằng script riêng — bản thân `autotest-gen-test` không cần).
-   Với `examples/shop-order/`:
+   `allure-pytest-bdd` và `pyyaml` là bắt buộc (không phải tuỳ chọn) — báo
+   cáo chỉ dùng Allure (không dùng `pytest-html`), và biến môi trường
+   UAT/PROD đọc qua YAML (xem README mục "Đặc tính production"). Với
+   `examples/shop-order/`:
    ```bash
    cd examples/shop-order
    python3 -m venv .venv
-   .venv/bin/pip install -r requirements.txt pytest pytest-bdd playwright pytest-html
+   .venv/bin/pip install -r requirements.txt pytest pytest-bdd playwright allure-pytest-bdd pyyaml
    .venv/bin/playwright install chromium
    .venv/bin/python db/seed_data.py       # tạo db/shop.sqlite3, dữ liệu cố định
    cd app && ../.venv/bin/python app.py   # http://127.0.0.1:5001, để chạy song song
@@ -118,8 +121,8 @@ Phải hiện đúng số test = số case bạn mong đợi (đếm lại bằn
 ```
 Dùng skill autotest-run-test để chạy toàn bộ bộ test vừa sinh cho
 "<ten-tinh-nang>", seed dữ liệu test cần thiết, phân loại rõ bug thật vs lỗi
-kịch bản nếu có fail, và xuất báo cáo (report.html, allure-report nếu có cài
-Allure CLI, test_summary.md).
+kịch bản nếu có fail, và xuất báo cáo (Allure: allure-results luôn có,
+allure-report nếu máy có cài Allure CLI, kèm test_summary.md).
 ```
 
 **Ví dụ đã điền:**
@@ -208,14 +211,16 @@ do oracle lấy kỳ vọng từ chính app, hoặc thiếu case biên/tổ hợ
 xem lại Prompt 1a trước khi kết luận "app không có bug".
 
 ```bash
-cat reports/test_summary.md     # bảng ID case | scenario | PASS/FAIL | lỗi
-open reports/report.html        # chi tiết từng case, lọc theo Failed
+cat reports/test_summary.md                       # bảng ID case | scenario | PASS/FAIL | lỗi
+allure open reports/allure-report                 # đã có Allure CLI (allure generate)
+allure serve reports/allure-results               # chưa build report, xem trực tiếp từ results
 ```
 
 ### Bước 4 — Prompt yêu cầu báo cáo bug
 
 ```
-Đọc reports/test_summary.md và reports/report.html của lần chạy vừa rồi.
+Đọc reports/test_summary.md và report Allure (reports/allure-report hoặc
+allure serve reports/allure-results) của lần chạy vừa rồi.
 Với mỗi testcase FAIL, viết 1 mục báo cáo bug gồm: ID case, tên scenario,
 input dùng để tái hiện, kết quả mong đợi (theo README) vs kết quả thực tế
 (app trả về), và nghi vấn nó là bug thật hay lỗi kịch bản. Không tự sửa code

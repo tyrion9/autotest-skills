@@ -18,7 +18,7 @@ File .feature có sẵn    ─┘    (tự verify: collect     Python (pytest-bd
                                autotest-run-test
                                         │
                                         ▼
-                    Kết quả test + report.html + allure-report/ + test_summary.md
+                    Kết quả test + allure-report/ + test_summary.md
 ```
 
 Triết lý: `autotest-gen-test` nhận đúng nguồn người dùng đang có — không bắt
